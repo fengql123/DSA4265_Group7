@@ -1,0 +1,30 @@
+# =============================================================================
+# Main configuration — LLM, embeddings, RAG parameters
+# =============================================================================
+
+llm:
+  provider: "openrouter"                    # "openrouter" | "openai" | "anthropic" | "local"
+  model: "openai/gpt-5.4-nano"          # Vision + tool calling
+  temperature: 0.1
+
+  # Provider-specific settings (only the active provider is used)
+  openrouter:
+    api_key_env: "OPENROUTER_API_KEY"
+  openai:
+    api_key_env: "OPENAI_API_KEY"
+  anthropic:
+    api_key_env: "ANTHROPIC_API_KEY"
+  local:
+    base_url: "http://localhost:30000/v1"   # SGLang default
+
+  # Set false to disable multimodal image injection in agent prompts
+  vision_enabled: true
+
+embedding:
+  model: "BAAI/bge-base-en-v1.5"         # HuggingFace model for embeddings
+
+rag:
+  chunk_size: 512
+  chunk_overlap: 64
+  retrieval_top_k: 10
+  chroma_persist_dir: "./data/chromadb"

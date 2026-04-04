@@ -1,0 +1,39 @@
+# Data & outputs (large files, not tracked)
+data/
+outputs/
+!data/.gitkeep
+!outputs/.gitkeep
+
+# Environment
+.env
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ChromaDB
+chroma/
+
+# Model artifacts
+*.pt
+*.bin
+*.safetensors

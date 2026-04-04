@@ -1,0 +1,25 @@
+# =============================================================================
+# Ingestion manifest — defines how data sources map to ChromaDB collections
+# Usage: python scripts/ingest.py --manifest config/ingest_manifest.yaml
+# =============================================================================
+
+sources:
+  - input_dir: data/sec/
+    collection: sec_filings
+    metadata_fields:
+      doc_type: "sec_filing"
+    # Extract metadata from directory/file structure
+    metadata_from_path:
+      ticker: "{parent_dir}"       # e.g. data/sec/AAPL/10-K_2024.txt → ticker=AAPL
+
+  - input_dir: data/hf/earnings-calls-qa/
+    collection: earnings
+    metadata_fields:
+      doc_type: "earnings_transcript"
+    metadata_from_path:
+      ticker: "{parent_dir}"
+
+  - input_dir: data/hf/financial-news/
+    collection: news
+    metadata_fields:
+      doc_type: "news"

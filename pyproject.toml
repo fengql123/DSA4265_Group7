@@ -1,0 +1,56 @@
+[project]
+name = "sec-filing-analyst"
+version = "0.1.0"
+description = "Multi-Agent SEC Filing Analyst with Earnings-Driven Signals"
+requires-python = ">=3.11"
+dependencies = [
+    # Agent orchestration
+    "langgraph>=0.2",
+    "langchain-core>=0.3",
+    "langchain-openai>=0.2",
+    "langchain-anthropic>=0.3",
+    "langchain-openrouter>=0.2",
+
+    # MCP support
+    "mcp>=1.0",
+    "langchain-mcp-adapters>=0.1",
+
+    # RAG pipeline
+    "llama-index-core>=0.11",
+    "llama-index-embeddings-huggingface>=0.3",
+    "chromadb>=0.5",
+    "sentence-transformers>=3.0",
+
+    # Schemas & config
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "pyyaml",
+    "python-dotenv",
+
+    # Data sources
+    "yfinance",
+    "fredapi",
+    "edgartools",
+    "datasets",
+    "kaggle",
+    "requests",
+    "beautifulsoup4",
+
+    # ML models
+    "transformers",
+    "torch",
+
+    # Visualization & data
+    "matplotlib",
+    "pandas",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "jupyterlab", "ruff"]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
