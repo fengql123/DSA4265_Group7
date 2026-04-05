@@ -1,134 +1,90 @@
-"""Sentiment Analysis Agent — STUB.
-
-TODO: Teammates implement this agent. Replace mock implementations with real
-logic using RAG retrieval, FinBERT sentiment analysis, and chart generation.
-
-The stub returns mock data with a dummy chart image to test multimodality.
-It implements all abstract methods but skips the LLM — parse_output() returns
-a hardcoded SentimentReport directly.
-"""
-
 from __future__ import annotations
 
-import random
-from pathlib import Path
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.agents.base import BaseAgent
+from src.artifacts import Artifact
+from src.config import get_llm, load_prompt
 from src.schemas import SentimentReport
-from src.artifacts import Artifact, ArtifactType
+from src.tools.base_tool import ToolResult
+from src.tools.registry import get_tools
 
 
 class SentimentAgent(BaseAgent):
     def __init__(self):
         super().__init__(
             agent_name="sentiment",
-            tool_names=[],  # TODO: add real tools
+            tool_names=["rag_retrieve", "analyze_sentiment", "plot_sentiment_timeline"],
             output_field="sentiment_report",
             output_model=SentimentReport,
         )
-        self._mock_artifacts: list[Artifact] = []
-
-    # ------------------------------------------------------------------
-    # STUB implementations — teammates replace these with real logic
-    # ------------------------------------------------------------------
 
     def get_system_prompt(self, state: dict) -> str:
-        return "You are a sentiment analyst."
+        template = load_prompt(self.agent_name)
+        return template.format(
+            ticker=state.get("ticker", "UNKNOWN"),
+            date=state.get("analysis_date", "UNKNOWN"),
+        )
 
     def build_messages(self, state: dict) -> list:
+        ticker = state.get("ticker", "UNKNOWN")
+        analysis_date = state.get("analysis_date", "UNKNOWN")
+        start_date = state.get("start_date", "UNKNOWN")
+        lookback_days = state.get("lookback_days", 30)
+
         return [
             SystemMessage(content=self.get_system_prompt(state)),
-            HumanMessage(content=f"Analyze sentiment for {state.get('ticker', 'UNKNOWN')}."),
+            HumanMessage(
+                content=(
+                    f"Analyze sentiment for {ticker} as of {analysis_date}. "
+                    f"Focus on the recent period starting around {start_date} "
+                    f"and covering roughly the last {lookback_days} days. "
+                    f"Use rag_retrieve to search news and earnings transcript content, "
+                    f"then use analyze_sentiment on the retrieved text chunks. "
+                    f"If useful, use plot_sentiment_timeline to create a chart. "
+                    f"Return a structured sentiment report with overall_sentiment, "
+                    f"sentiment_score, key_themes, evidence, chart_paths, and summary."
+                )
+            ),
         ]
 
     def get_tools(self) -> list:
-        return []  # TODO: add rag_retrieve, analyze_sentiment, plot_sentiment_timeline
+        tools = get_tools(self.tool_names)
+        if self.mcp_servers:
+            tools.extend(self._load_mcp_tools())
+        return tools
 
     def handle_tool_result(self, result: Any) -> tuple[str, list[Artifact]]:
+        if isinstance(result, ToolResult):
+            return (result.content, result.artifacts)
         if isinstance(result, tuple) and len(result) == 2:
             return (str(result[0]), list(result[1]) if result[1] else [])
         return (str(result), [])
 
     def build_artifact_message(self, artifacts: list[Artifact]) -> HumanMessage | None:
-        return None  # TODO: implement multimodal injection
+        return None
 
     def parse_output(self, messages: list) -> SentimentReport:
-        """MOCK: Return random sentiment data instead of calling LLM."""
-        # Extract ticker from the messages
-        ticker = "UNKNOWN"
-        for msg in messages:
-            content = msg.content if hasattr(msg, "content") else str(msg)
-            if isinstance(content, str) and "ticker" not in content:
-                # Try to find ticker in the message
-                pass
-
-        score = round(random.uniform(-0.8, 0.8), 2)
-        sentiment = "bullish" if score > 0.2 else "bearish" if score < -0.2 else "neutral"
-
-        # Generate dummy chart for multimodal testing
-        chart_path = self._generate_mock_chart("MOCK", score)
-        if chart_path:
-            self._mock_artifacts.append(
-                Artifact(
-                    artifact_type=ArtifactType.IMAGE,
-                    path=str(chart_path),
-                    mime_type="image/png",
-                    description="Sentiment timeline (mock)",
+        llm = get_llm().with_structured_output(self.output_model)
+        messages = messages + [
+            HumanMessage(
+                content=(
+                    "Now produce your final structured sentiment report. "
+                    "Set overall_sentiment to exactly one of: bullish, neutral, bearish. "
+                    "Set sentiment_score between -1 and 1. "
+                    "Use concise, finance-focused key themes and include supporting evidence snippets."
                 )
             )
-
-        return SentimentReport(
-            ticker="MOCK",
-            overall_sentiment=sentiment,
-            sentiment_score=score,
-            key_themes=["revenue growth", "market competition", "product innovation"],
-            evidence=[
-                f"Mock: Sentiment is {sentiment} with score {score}.",
-                "Mock: Recent earnings exceeded analyst expectations.",
-            ],
-            chart_paths=[str(chart_path)] if chart_path else [],
-            summary=f"Mock sentiment analysis: {sentiment} (score: {score}).",
-        )
+        ]
+        return llm.invoke(messages)
 
     def build_result(self, output: object, artifacts: list[Artifact]) -> dict:
-        # Include any mock artifacts generated in parse_output
-        all_artifacts = artifacts + self._mock_artifacts
-        self._mock_artifacts = []  # Reset for next run
         result = {self.output_field: output}
-        if all_artifacts:
-            result["artifacts"] = all_artifacts
+        if artifacts:
+            result["artifacts"] = artifacts
         return result
 
     def is_vision_capable(self) -> bool:
         return False
-
-    @staticmethod
-    def _generate_mock_chart(ticker: str, score: float) -> Path | None:
-        """Generate a small dummy sentiment chart for multimodal testing."""
-        try:
-            import matplotlib
-            matplotlib.use("Agg")
-            import matplotlib.pyplot as plt
-
-            fig, ax = plt.subplots(figsize=(6, 3))
-            dates = ["Q1", "Q2", "Q3", "Q4"]
-            scores = [round(score + random.uniform(-0.3, 0.3), 2) for _ in dates]
-            colors = ["#2ecc71" if s > 0 else "#e74c3c" for s in scores]
-            ax.bar(dates, scores, color=colors)
-            ax.set_title(f"{ticker} Sentiment (Mock)")
-            ax.set_ylabel("Score")
-            ax.axhline(0, color="gray", linestyle="--", linewidth=0.5)
-            ax.set_ylim(-1, 1)
-            fig.tight_layout()
-
-            out_dir = Path("outputs")
-            out_dir.mkdir(exist_ok=True)
-            path = out_dir / f"{ticker}_mock_sentiment.png"
-            fig.savefig(path, dpi=100)
-            plt.close(fig)
-            return path
-        except Exception:
-            return None
