@@ -35,13 +35,19 @@ class TechnicalAgent(BaseAgent):
         )
 
     def build_messages(self, state: dict) -> list:
+        ticker = state.get("ticker", "UNKNOWN")
+        analysis_date = state.get("analysis_date", "UNKNOWN")
+
         return [
             SystemMessage(content=self.get_system_prompt(state)),
             HumanMessage(
                 content=(
-                    f"Analyze the technicals of {state.get('ticker', 'UNKNOWN')} "
-                    f"as of {state.get('analysis_date', 'UNKNOWN')}. "
-                    f"Use your tools to gather data, then provide your analysis."
+                    f"Analyze the technicals of {ticker} as of {analysis_date}. "
+                    f"Use get_market_data to retrieve relevant price-based indicators and market statistics. "
+                    f"Focus on current price, 52-week high and low, 50-day and 200-day moving averages, beta, "
+                    f"and overall trend direction. "
+                    f"Based on the retrieved data, determine whether the stock looks bullish, bearish, or neutral. "
+                    f"Ground your conclusion in the retrieved metrics and avoid making assumptions beyond the data."
                 )
             ),
         ]
@@ -65,7 +71,15 @@ class TechnicalAgent(BaseAgent):
     def parse_output(self, messages: list) -> TechnicalReport:
         llm = get_llm().with_structured_output(self.output_model)
         messages = messages + [
-            HumanMessage(content="Now produce your final structured technical report.")
+            HumanMessage(
+                content=(
+                    "Now produce your final structured technical report. "
+                    "Use only the retrieved market data. "
+                    "Be specific about current price, 52-week high and low, "
+                    "50-day and 200-day moving averages, beta, and the final technical signal. "
+                    "Do not invent any values that were not retrieved."
+                )
+            )
         ]
         return llm.invoke(messages)
 
