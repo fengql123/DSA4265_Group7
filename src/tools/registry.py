@@ -34,6 +34,7 @@ _TOOL_MODULES = [
     "src.tools.rag_tool",
     "src.tools.market_data_tool",
     "src.tools.fred_tool",
+    "src.tools.sentiment_tool",
 ]
 
 
