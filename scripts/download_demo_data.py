@@ -86,50 +86,39 @@ def download_earnings(ticker: str) -> Path | None:
     try:
         from datasets import load_dataset
 
-        # kurry/sp500_earnings_transcripts has transcripts for S&P 500 companies
         ds = load_dataset(
             "lamini/earnings-calls-qa",
             split="train",
             streaming=True,
         )
 
-        # Collect rows mentioning our ticker (case-insensitive search)
-        ticker_lower = ticker.lower()
-        # Map tickers to company names for better matching
-        ticker_to_names = {
-            "AAPL": ["apple"],
-            "MSFT": ["microsoft"],
-            "GOOGL": ["google", "alphabet"],
-            "AMZN": ["amazon"],
-            "NVDA": ["nvidia"],
-            "META": ["meta", "facebook"],
-            "TSLA": ["tesla"],
-        }
-        search_terms = [ticker_lower] + ticker_to_names.get(ticker, [])
+        ticker = ticker.upper()
 
         rows = []
         seen = 0
         for row in ds:
             seen += 1
-            # Check all text fields for the ticker/company name
-            text_fields = " ".join(
-                str(v).lower() for v in row.values() if isinstance(v, str)
-            )
-            if any(term in text_fields for term in search_terms):
+
+            row_ticker = str(row.get("ticker", "")).upper().strip()
+
+            # Strict filter: only keep rows whose ticker exactly matches
+            if row_ticker == ticker:
                 rows.append(row)
-                if len(rows) >= 50:
-                    break
+
+            if len(rows) >= 50:
+                break
             if seen >= 50000:
                 break
             if seen % 10000 == 0:
                 print(f"  Scanned {seen} rows, found {len(rows)} matches...")
 
         if rows:
-            with open(out_file, "w") as f:
+            with open(out_file, "w", encoding="utf-8") as f:
                 for row in rows:
-                    # Convert all values to strings for JSON serialization
-                    clean = {k: str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v
-                             for k, v in row.items()}
+                    clean = {
+                        k: str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v
+                        for k, v in row.items()
+                    }
                     f.write(json.dumps(clean) + "\n")
             print(f"  Saved {len(rows)} transcript entries -> {out_file.name}")
             return out_file
