@@ -4,7 +4,8 @@
 Downloads real financial data for a single ticker (AAPL by default):
   1. SEC 10-K filing text from SEC EDGAR
   2. Earnings call transcript from HuggingFace
-  3. Market data from yfinance
+  3. Recent news from yfinance
+  4. Market data from yfinance
 
 Usage:
     python scripts/download_demo_data.py
@@ -26,7 +27,7 @@ DEMO_DIR = Path("data/demo")
 
 def download_sec_filing(ticker: str) -> list[Path]:
     """Download the most recent 10-K filing for a ticker from SEC EDGAR."""
-    print(f"\n[1/3] Downloading SEC 10-K filing for {ticker}...")
+    print(f"\n[1/4] Downloading SEC 10-K filing for {ticker}...")
 
     from edgar import set_identity, Company
 
@@ -73,7 +74,7 @@ def download_sec_filing(ticker: str) -> list[Path]:
 
 def download_earnings(ticker: str) -> Path | None:
     """Download earnings call transcripts from HuggingFace."""
-    print(f"\n[2/3] Downloading earnings transcripts for {ticker}...")
+    print(f"\n[2/4] Downloading earnings transcripts for {ticker}...")
 
     out_dir = DEMO_DIR / "earnings" / ticker
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -133,7 +134,7 @@ def download_earnings(ticker: str) -> Path | None:
 
 def download_market_data(ticker: str) -> Path | None:
     """Download OHLCV price data and fundamentals from yfinance."""
-    print(f"\n[3/3] Downloading market data for {ticker}...")
+    print(f"\n[4/4] Downloading market data for {ticker}...")
 
     out_dir = DEMO_DIR / "market"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -176,6 +177,52 @@ def download_market_data(ticker: str) -> Path | None:
     except Exception as e:
         print(f"  Error: {e}")
         return None
+    
+def download_news(ticker: str) -> Path | None:
+    """Download recent news for a ticker using yfinance."""
+    print(f"\n[3/4] Downloading news for {ticker}...")
+
+    out_dir = DEMO_DIR / "news" / ticker
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / "news.jsonl"
+
+    if out_file.exists():
+        print(f"  Already exists: {out_file.name}")
+        return out_file
+
+    try:
+        import yfinance as yf
+
+        stock = yf.Ticker(ticker)
+        news_items = getattr(stock, "news", []) or []
+
+        cleaned = []
+        for item in news_items[:30]:
+            cleaned.append(
+                {
+                    "ticker": ticker,
+                    "title": item.get("title", ""),
+                    "summary": item.get("summary", "") or item.get("content", ""),
+                    "source": item.get("publisher", ""),
+                    "date": str(item.get("providerPublishTime", "")),
+                    "url": item.get("link", ""),
+                }
+            )
+
+        if not cleaned:
+            print(f"  No news found for {ticker}")
+            return None
+
+        with open(out_file, "w", encoding="utf-8") as f:
+            for row in cleaned:
+                f.write(json.dumps(row) + "\n")
+
+        print(f"  Saved {len(cleaned)} news entries -> {out_file.name}")
+        return out_file
+
+    except Exception as e:
+        print(f"  Error: {e}")
+        return None
 
 
 def main():
@@ -192,6 +239,7 @@ def main():
 
     sec_files = download_sec_filing(ticker)
     earnings_file = download_earnings(ticker)
+    news_file = download_news(ticker)
     market_file = download_market_data(ticker)
 
     print("\n" + "=" * 60)
@@ -200,11 +248,13 @@ def main():
         print(f"  SEC:      {f}")
     if earnings_file:
         print(f"  Earnings: {earnings_file}")
+    if news_file:
+        print(f"  News:     {news_file}")
     if market_file:
         print(f"  Market:   {market_file}")
         print(f"  Info:     {market_file.with_name(f'{ticker}_info.json')}")
 
-    print(f"\nNext: python demo/single_agent_demo.py --ticker {ticker}")
+    print(f"\nNext: python scripts/ingest_demo.py --ticker {ticker}")
     print("=" * 60)
 
 
