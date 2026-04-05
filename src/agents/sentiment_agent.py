@@ -41,9 +41,24 @@ class SentimentAgent(BaseAgent):
                     f"Analyze sentiment for {ticker} as of {analysis_date}. "
                     f"Focus on the recent period starting around {start_date} "
                     f"and covering roughly the last {lookback_days} days. "
-                    f"Use rag_retrieve to search news and earnings transcript content, "
-                    f"then use analyze_sentiment on the retrieved text chunks. "
-                    f"If useful, use plot_sentiment_timeline to create a chart. "
+
+                    f"Use rag_retrieve twice: "
+                    f"(1) retrieve recent company-specific NEWS from the 'news' collection, "
+                    f"and (2) retrieve recent company-specific EARNINGS TRANSCRIPT content "
+                    f"from the 'earnings' collection. "
+
+                    f"When calling rag_retrieve, make sure the retrieval is specific to ticker {ticker}. "
+                    f"Do not use sec_filings for this agent unless absolutely necessary. "
+
+                    f"After retrieving both source types, combine the most relevant text chunks "
+                    f"from news and earnings, then run analyze_sentiment on the combined text list. "
+
+                    f"Your final report should clearly reflect both sources when available. "
+                    f"If one source is missing, say so explicitly. "
+
+                    f"If you have enough dated evidence points, use plot_sentiment_timeline "
+                    f"to create a chart. "
+
                     f"Return a structured sentiment report with overall_sentiment, "
                     f"sentiment_score, key_themes, evidence, chart_paths, and summary."
                 )
@@ -74,7 +89,11 @@ class SentimentAgent(BaseAgent):
                     "Now produce your final structured sentiment report. "
                     "Set overall_sentiment to exactly one of: bullish, neutral, bearish. "
                     "Set sentiment_score between -1 and 1. "
-                    "Use concise, finance-focused key themes and include supporting evidence snippets."
+                    "Use concise, finance-focused key themes. "
+                    "Include supporting evidence snippets. "
+                    "Prefer evidence from both news and earnings transcripts when both are available. "
+                    "If only one source type was successfully retrieved, make that clear in the summary. "
+                    "Do not invent evidence."
                 )
             )
         ]
