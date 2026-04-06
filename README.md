@@ -101,6 +101,49 @@ python demo/single_agent_demo.py --agent fundamental --ticker AAPL
 python demo/single_agent_demo.py --agent risk --ticker AAPL
 ```
 
+## Fine-Tuned Sentiment Model
+
+By default, sentiment inference uses `ProsusAI/finbert`.
+
+To train the fine-tuned sentiment checkpoint:
+
+```bash
+python scripts/train_sentiment.py \
+  --dataset "TheFinAI/fiqa-sentiment-classification" \
+  --label-field score \
+  --output-dir models/finbert-fiqa-full \
+  --epochs 3
+```
+
+To use the fine-tuned checkpoint for inference:
+
+```bash
+export SENTIMENT_MODEL_PATH="models/finbert-fiqa-full"
+python demo/single_agent_demo.py --agent sentiment --ticker TSLA
+```
+
+To switch back to the baseline model:
+
+```bash
+unset SENTIMENT_MODEL_PATH
+python demo/single_agent_demo.py --agent sentiment --ticker TSLA
+```
+
+`SENTIMENT_MODEL_PATH` also affects:
+- `python demo/pipeline_demo.py`
+- `python -m src.runner "Analyze Tesla stock"`
+
+## Sentiment Images
+
+Sentiment runs can now generate chart artifacts automatically, including:
+- sentiment distribution
+- sentiment scores by evidence chunk
+- sentiment timeline (when dated evidence is available)
+
+These images are typically saved in:
+- `outputs/`
+- `outputs/single_agent/sentiment/`
+
 ## Output Files
 
 Main demo output:

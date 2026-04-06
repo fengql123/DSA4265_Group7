@@ -48,6 +48,7 @@ class SentimentAgent(BaseAgent):
                     f"from the 'earnings' collection. "
 
                     f"When calling rag_retrieve, make sure the retrieval is specific to ticker {ticker}. "
+                    f"Pass start_date={start_date} and end_date={analysis_date} so dated chunks can be filtered to the requested window. "
                     f"Do not use sec_filings for this agent unless absolutely necessary. "
 
                     f"After retrieving both source types, combine the most relevant text chunks "

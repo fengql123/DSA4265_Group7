@@ -17,12 +17,42 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 DEMO_DIR = Path("data/demo")
+
+
+def _normalize_date(value: str | None) -> str:
+    """Convert common date formats to YYYY-MM-DD when possible."""
+    if not value:
+        return ""
+
+    value = str(value).strip()
+    if not value:
+        return ""
+
+    iso_match = re.match(r"^(\d{4}-\d{2}-\d{2})", value)
+    if iso_match:
+        return iso_match.group(1)
+
+    for fmt in ("%b %d, %Y, %I:%M %p %Z", "%b %d, %Y", "%Y/%m/%d"):
+        try:
+            from datetime import datetime
+
+            return datetime.strptime(value, fmt).date().isoformat()
+        except ValueError:
+            continue
+
+    return value
+
+
+def _extract_date_from_filename(path: Path) -> str:
+    match = re.search(r"(\d{4}-\d{2}-\d{2})", path.name)
+    return match.group(1) if match else ""
 
 
 def ingest_sec_filings(ticker: str) -> int:
@@ -46,6 +76,7 @@ def ingest_sec_filings(ticker: str) -> int:
             "ticker": ticker,
             "doc_type": "sec_filing",
             "source_file": path.name,
+            "date": _extract_date_from_filename(path),
         }
 
     return index_files(
@@ -65,17 +96,40 @@ def ingest_earnings(ticker: str) -> int:
         return 0
 
     texts = []
+    metadata = []
     for f in sorted(earnings_dir.glob("*.*")):
         if f.suffix == ".jsonl":
             for line in f.read_text().strip().splitlines():
                 row = json.loads(line)
-                parts = [str(v) for v in row.values() if isinstance(v, str) and len(str(v)) > 20]
+                transcript = str(row.get("transcript", "")).strip()
+                answer = str(row.get("answer", "")).strip()
+                question = str(row.get("question", "")).strip()
+                quarter = str(row.get("q", "")).strip()
+                transcript_date = _normalize_date(row.get("date"))
+
+                parts = [p for p in [question, answer, transcript] if len(p) > 20]
                 if parts:
                     texts.append("\n".join(parts))
+                    metadata.append(
+                        {
+                            "ticker": ticker,
+                            "doc_type": "earnings_transcript",
+                            "source_file": f.name,
+                            "date": transcript_date,
+                            "quarter": quarter,
+                        }
+                    )
         else:
             text = f.read_text(encoding="utf-8")
             if text.strip():
                 texts.append(text)
+                metadata.append(
+                    {
+                        "ticker": ticker,
+                        "doc_type": "earnings_transcript",
+                        "source_file": f.name,
+                    }
+                )
 
     if not texts:
         print(f"  No transcript text found in {earnings_dir}")
@@ -83,7 +137,6 @@ def ingest_earnings(ticker: str) -> int:
 
     print(f"  Found {len(texts)} transcript entries")
 
-    metadata = [{"ticker": ticker, "doc_type": "earnings_transcript"} for _ in texts]
     return index_documents(
         texts=texts,
         collection_name="earnings",
@@ -106,11 +159,23 @@ def ingest_news(ticker: str) -> int:
         for line in f.read_text(encoding="utf-8").strip().splitlines():
             row = json.loads(line)
 
-            title = str(row.get("title", "")).strip()
-            summary = str(row.get("summary", "")).strip()
-            source = str(row.get("source", "")).strip()
-            date = str(row.get("date", "")).strip()
-            url = str(row.get("url", "")).strip()
+            summary_obj = row.get("summary")
+            if isinstance(summary_obj, dict):
+                title = str(summary_obj.get("title", "")).strip()
+                summary = str(summary_obj.get("summary", "")).strip()
+                source = str(summary_obj.get("provider", {}).get("displayName", "")).strip()
+                date = _normalize_date(summary_obj.get("pubDate") or summary_obj.get("displayTime"))
+                url = str(
+                    summary_obj.get("canonicalUrl", {}).get("url")
+                    or summary_obj.get("clickThroughUrl", {}).get("url")
+                    or ""
+                ).strip()
+            else:
+                title = str(row.get("title", "")).strip()
+                summary = str(row.get("summary", "")).strip()
+                source = str(row.get("source", "")).strip()
+                date = _normalize_date(row.get("date"))
+                url = str(row.get("url", "")).strip()
 
             body_parts = [p for p in [title, summary] if p]
             if not body_parts:
