@@ -103,7 +103,14 @@ class MainAgent(BaseAgent):
         llm = get_llm().with_structured_output(self.output_model)
         messages = messages + [
             HumanMessage(
-                content="Now produce your final structured investment memo based on all the analysis above."
+                content=(
+                    "Now produce the final structured investment memo. "
+                    "Call no more tools. Fill every field in the InvestmentMemo schema, "
+                    "keep the recommendation consistent with the evidence, and ensure "
+                    "report_markdown contains the sections: Executive Summary, "
+                    "Fundamental Analysis, Technical Outlook, Sentiment Analysis, "
+                    "Risk Factors, Evidence Quality & Limitations, and Investment Recommendation."
+                )
             )
         ]
         return llm.invoke(messages)
