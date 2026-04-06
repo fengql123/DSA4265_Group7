@@ -55,7 +55,8 @@ class Retriever:
         self._store = store or get_default_store()
         self._embedding_model = embedding_model
         cfg = get_rag_config()
-        self._default_top_k = top_k or cfg["retrieval_top_k"]
+        env_top_k = os.getenv("PIPELINE_TOP_K")
+        self.default_top_k = top_k or int(env_top_k or cfg["retrieval_top_k"])
 
     @property
     def embedding_model(self):

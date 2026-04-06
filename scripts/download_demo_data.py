@@ -18,6 +18,7 @@ import argparse
 import json
 import sys
 import time
+import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -197,7 +198,10 @@ def download_news(ticker: str) -> Path | None:
         news_items = getattr(stock, "news", []) or []
 
         cleaned = []
-        for item in news_items[:30]:
+
+        NEWS_LIMIT = int(os.getenv("PIPELINE_NEWS_LIMIT", "30"))
+
+        for item in news_items[:NEWS_LIMIT]:
             cleaned.append(
                 {
                     "ticker": ticker,

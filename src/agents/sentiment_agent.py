@@ -11,6 +11,7 @@ from src.schemas import SentimentReport
 from src.tools.base_tool import ToolResult
 from src.tools.registry import get_tools
 
+import os
 
 class SentimentAgent(BaseAgent):
     def __init__(self):
@@ -32,7 +33,10 @@ class SentimentAgent(BaseAgent):
         ticker = state.get("ticker", "UNKNOWN")
         analysis_date = state.get("analysis_date", "UNKNOWN")
         start_date = state.get("start_date", "UNKNOWN")
-        lookback_days = state.get("lookback_days", 30)
+        lookback_days = int(
+            os.getenv("PIPELINE_LOOKBACK_DAYS",
+            state.get("lookback_days", 30))
+        )
 
         return [
             SystemMessage(content=self.get_system_prompt(state)),

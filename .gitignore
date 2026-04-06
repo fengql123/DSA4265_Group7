@@ -37,3 +37,4 @@ chroma/
 *.pt
 *.bin
 *.safetensors
+.venv311/
