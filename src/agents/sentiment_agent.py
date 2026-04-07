@@ -12,6 +12,7 @@ from src.tools.base_tool import ToolResult
 from src.tools.registry import get_tools
 
 import os
+import re
 
 class SentimentAgent(BaseAgent):
     def __init__(self):
@@ -85,6 +86,49 @@ class SentimentAgent(BaseAgent):
 
     def build_artifact_message(self, artifacts: list[Artifact]) -> HumanMessage | None:
         return None
+    
+    @staticmethod
+    def _is_stale_evidence(text: str) -> bool:
+        text = (text or "").lower()
+        stale_patterns = [
+            r"out of \d+-day window",
+            r"out-of-window",
+            r"out of window",
+            r"outside the requested window",
+            r"outside \d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}",
+        ]
+        return any(re.search(pattern, text) for pattern in stale_patterns)
+
+    @staticmethod
+    def _looks_like_earnings_evidence(text: str) -> bool:
+        text = (text or "").lower()
+        return (
+            "earnings" in text
+            or "transcript" in text
+            or "cfo:" in text
+            or "ceo:" in text
+        )
+
+    def _clean_sentiment_report(self, report: SentimentReport) -> SentimentReport:
+        kept_evidence = []
+        removed_stale_earnings = 0
+
+        for ev in (report.evidence or []):
+            if self._is_stale_evidence(ev):
+                if self._looks_like_earnings_evidence(ev):
+                    removed_stale_earnings += 1
+                continue
+            kept_evidence.append(ev)
+
+        report.evidence = kept_evidence
+
+        if removed_stale_earnings > 0:
+            note = "Recent earnings transcript evidence was unavailable within the requested window."
+            summary = report.summary or ""
+            if note not in summary:
+                report.summary = f"{summary} {note}".strip()
+
+        return report
 
     def parse_output(self, messages: list) -> SentimentReport:
         llm = get_llm().with_structured_output(self.output_model)
@@ -98,6 +142,8 @@ class SentimentAgent(BaseAgent):
                     "Include supporting evidence snippets. "
                     "Prefer evidence from both news and earnings transcripts when both are available. "
                     "If only one source type was successfully retrieved, make that clear in the summary. "
+                    "Never include stale or out-of-window evidence in the evidence list. "
+                    "If earnings evidence is stale or unavailable, omit it and say so briefly in the summary. "
                     "Do not invent evidence."
                 )
             )
@@ -105,6 +151,9 @@ class SentimentAgent(BaseAgent):
         return llm.invoke(messages)
 
     def build_result(self, output: object, artifacts: list[Artifact]) -> dict:
+        if isinstance(output, SentimentReport):
+            output = self._clean_sentiment_report(output)
+
         result = {self.output_field: output}
         if artifacts:
             result["artifacts"] = artifacts
