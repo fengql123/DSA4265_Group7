@@ -5,12 +5,20 @@ import argparse
 import itertools
 import json
 import os
+import sys
 import subprocess
 from pathlib import Path
 
 
 def run_cmd(cmd: list[str], env: dict | None = None) -> tuple[int, str, str]:
-    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        env=env,
+        encoding="utf-8",
+        errors="replace",
+    )
     return result.returncode, result.stdout, result.stderr
 
 
@@ -27,6 +35,7 @@ def main():
     parser = argparse.ArgumentParser(description="Tune sentiment pipeline hyperparameters.")
     parser.add_argument("--ticker", default="MSFT")
     parser.add_argument("--query", default="Analyze Microsoft stock")
+    py = sys.executable
     parser.add_argument("--model-path", default="", help="Optional fine-tuned sentiment model path")
     args = parser.parse_args()
 
@@ -52,6 +61,8 @@ def main():
         )
 
         env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONUTF8"] = "1"
 
         # Use fine-tuned model if provided
         if args.model_path:
@@ -59,31 +70,42 @@ def main():
 
         # Pass pipeline settings through environment variables
         env["PIPELINE_NEWS_LIMIT"] = str(news_limit)
-        env["PIPELINE_LOOKBACK_DAYS"] = str(lookback_days)
-        env["PIPELINE_TOP_K_NEWS"] = str(top_k_news)
+        env["PIPELINE_TOP_K"] = str(top_k_news)
+
+        news_path = Path("data/demo/news") / args.ticker.upper() / "news.jsonl"
+        if news_path.exists():
+            news_path.unlink()
 
         # Step 1: download data
         rc1, out1, err1 = run_cmd(
-            ["python", "scripts/download_demo_data.py", "--ticker", args.ticker],
+            [py, "scripts/download_demo_data.py", "--ticker", args.ticker],
             env=env,
         )
 
         # Step 2: ingest
         rc2, out2, err2 = run_cmd(
-            ["python", "scripts/ingest_demo.py", "--ticker", args.ticker],
+            [py, "scripts/ingest_demo.py", "--ticker", args.ticker],
             env=env,
         )
 
+        report_path = Path("outputs/single_agent/sentiment/sentiment_report.json")
+        if report_path.exists():
+            report_path.unlink()
+
         # Step 3: run sentiment agent only
         rc3, out3, err3 = run_cmd(
-            ["python", "demo/single_agent_demo.py", "--agent", "sentiment", "--ticker", args.ticker],
+            [
+                py,
+                "demo/single_agent_demo.py",
+                "--agent", "sentiment",
+                "--ticker", args.ticker,
+                "--lookback-days", str(lookback_days),
+            ],
             env=env,
         )
 
         # Try to read the generated report if it exists
-        report_path = Path(
-            f"outputs/single_agent/sentiment/{args.ticker.lower()}_sentiment_report.json"
-        )
+        report_path = Path("outputs/single_agent/sentiment/sentiment_report.json")
         report = load_report(report_path)
 
         summary = {

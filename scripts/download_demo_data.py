@@ -180,7 +180,7 @@ def download_market_data(ticker: str) -> Path | None:
         return None
     
 def download_news(ticker: str) -> Path | None:
-    """Download recent news for a ticker using yfinance."""
+    """Download recent news for a ticker using yfinance and normalize fields."""
     print(f"\n[3/4] Downloading news for {ticker}...")
 
     out_dir = DEMO_DIR / "news" / ticker
@@ -194,24 +194,103 @@ def download_news(ticker: str) -> Path | None:
     try:
         import yfinance as yf
 
+        def _pick(*values):
+            for v in values:
+                if v not in (None, "", [], {}):
+                    return v
+            return ""
+
+        def _normalize_news_item(item: dict, ticker: str) -> dict:
+            # Some yfinance news payloads are flat, others keep the useful fields
+            # inside nested objects such as content/provider/canonicalUrl/clickThroughUrl.
+            content = item.get("content")
+            if not isinstance(content, dict):
+                content = {}
+
+            provider = content.get("provider")
+            if not isinstance(provider, dict):
+                provider = {}
+
+            canonical = content.get("canonicalUrl")
+            if not isinstance(canonical, dict):
+                canonical = {}
+
+            clickthrough = content.get("clickThroughUrl")
+            if not isinstance(clickthrough, dict):
+                clickthrough = {}
+
+            title = _pick(
+                item.get("title"),
+                content.get("title"),
+            )
+
+            summary = _pick(
+                item.get("summary"),
+                content.get("summary"),
+                content.get("description"),
+            )
+
+            source = _pick(
+                item.get("publisher"),
+                item.get("source"),
+                provider.get("displayName"),
+                provider.get("sourceId"),
+            )
+
+            date = _pick(
+                item.get("providerPublishTime"),
+                item.get("pubDate"),
+                content.get("pubDate"),
+                content.get("displayTime"),
+            )
+
+            url = _pick(
+                item.get("link"),
+                item.get("url"),
+                canonical.get("url"),
+                clickthrough.get("url"),
+            )
+
+            normalized = {
+                "ticker": ticker,
+                "title": str(title),
+                "summary": str(summary),
+                "source": str(source),
+                "date": str(date),
+                "url": str(url),
+            }
+
+            # Keep useful optional metadata when available
+            content_type = _pick(item.get("contentType"), content.get("contentType"))
+            if content_type:
+                normalized["content_type"] = str(content_type)
+
+            item_id = _pick(item.get("id"), content.get("id"))
+            if item_id:
+                normalized["id"] = str(item_id)
+
+            # Optional: keep raw payload for debugging / future schema updates
+            normalized["raw"] = item
+
+            return normalized
+
         stock = yf.Ticker(ticker)
         news_items = getattr(stock, "news", []) or []
 
+        news_limit = int(os.getenv("PIPELINE_NEWS_LIMIT", "30"))
         cleaned = []
 
-        NEWS_LIMIT = int(os.getenv("PIPELINE_NEWS_LIMIT", "30"))
+        for item in news_items[:news_limit]:
+            if not isinstance(item, dict):
+                continue
 
-        for item in news_items[:NEWS_LIMIT]:
-            cleaned.append(
-                {
-                    "ticker": ticker,
-                    "title": item.get("title", ""),
-                    "summary": item.get("summary", "") or item.get("content", ""),
-                    "source": item.get("publisher", ""),
-                    "date": str(item.get("providerPublishTime", "")),
-                    "url": item.get("link", ""),
-                }
-            )
+            row = _normalize_news_item(item, ticker)
+
+            # Skip useless rows that still have no real text
+            if not row["title"] and not row["summary"]:
+                continue
+
+            cleaned.append(row)
 
         if not cleaned:
             print(f"  No news found for {ticker}")
@@ -219,7 +298,7 @@ def download_news(ticker: str) -> Path | None:
 
         with open(out_file, "w", encoding="utf-8") as f:
             for row in cleaned:
-                f.write(json.dumps(row) + "\n")
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
         print(f"  Saved {len(cleaned)} news entries -> {out_file.name}")
         return out_file
