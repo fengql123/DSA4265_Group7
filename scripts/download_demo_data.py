@@ -277,7 +277,7 @@ def download_news(ticker: str) -> Path | None:
         stock = yf.Ticker(ticker)
         news_items = getattr(stock, "news", []) or []
 
-        news_limit = int(os.getenv("PIPELINE_NEWS_LIMIT", "30"))
+        news_limit = int(os.getenv("PIPELINE_NEWS_LIMIT", "10"))
         cleaned = []
 
         for item in news_items[:news_limit]:

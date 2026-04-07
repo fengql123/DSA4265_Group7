@@ -147,7 +147,7 @@ def main():
         default=date.today().isoformat(),
         help="Analysis date YYYY-MM-DD (default: today)",
     )
-    parser.add_argument("--lookback-days", type=int, default=365, help="Lookback period in days (default: 365)")
+    parser.add_argument("--lookback-days", type=int, default=180, help="Lookback period in days (default: 180)")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging for agents")
     args = parser.parse_args()
 
