@@ -72,6 +72,14 @@ class InvestmentMemo(BaseModel):
     recommendation: Literal["strong_buy", "buy", "hold", "sell", "strong_sell"]
     confidence: float = Field(ge=0.0, le=1.0, description="Confidence in the recommendation")
     thesis: str = Field(description="Core investment thesis")
+    executive_summary: str = Field(description="High-level overview of the investment case")
+    fundamental_analysis: str = Field(description="Detailed synthesis of the fundamental analysis")
+    technical_outlook: str = Field(description="Detailed synthesis of the technical analysis")
+    sentiment_analysis: str = Field(description="Detailed synthesis of the sentiment analysis")
+    risk_assessment: str = Field(description="Detailed synthesis of the key risks and mitigants")
+    recommendation_rationale: str = Field(
+        description="Explanation of why the final recommendation and confidence level were chosen"
+    )
     sentiment_summary: str = Field(description="Summary of sentiment findings")
     fundamental_summary: str = Field(description="Summary of fundamental findings")
     technical_summary: str = Field(description="Summary of technical findings")

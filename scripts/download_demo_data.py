@@ -4,7 +4,8 @@
 Downloads real financial data for a single ticker (AAPL by default):
   1. SEC 10-K filing text from SEC EDGAR
   2. Earnings call transcript from HuggingFace
-  3. Market data from yfinance
+  3. Recent news from yfinance
+  4. Market data from yfinance
 
 Usage:
     python scripts/download_demo_data.py
@@ -17,6 +18,7 @@ import argparse
 import json
 import sys
 import time
+import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -26,7 +28,7 @@ DEMO_DIR = Path("data/demo")
 
 def download_sec_filing(ticker: str) -> list[Path]:
     """Download the most recent 10-K filing for a ticker from SEC EDGAR."""
-    print(f"\n[1/3] Downloading SEC 10-K filing for {ticker}...")
+    print(f"\n[1/4] Downloading SEC 10-K filing for {ticker}...")
 
     from edgar import set_identity, Company
 
@@ -73,7 +75,7 @@ def download_sec_filing(ticker: str) -> list[Path]:
 
 def download_earnings(ticker: str) -> Path | None:
     """Download earnings call transcripts from HuggingFace."""
-    print(f"\n[2/3] Downloading earnings transcripts for {ticker}...")
+    print(f"\n[2/4] Downloading earnings transcripts for {ticker}...")
 
     out_dir = DEMO_DIR / "earnings" / ticker
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -86,50 +88,39 @@ def download_earnings(ticker: str) -> Path | None:
     try:
         from datasets import load_dataset
 
-        # kurry/sp500_earnings_transcripts has transcripts for S&P 500 companies
         ds = load_dataset(
             "lamini/earnings-calls-qa",
             split="train",
             streaming=True,
         )
 
-        # Collect rows mentioning our ticker (case-insensitive search)
-        ticker_lower = ticker.lower()
-        # Map tickers to company names for better matching
-        ticker_to_names = {
-            "AAPL": ["apple"],
-            "MSFT": ["microsoft"],
-            "GOOGL": ["google", "alphabet"],
-            "AMZN": ["amazon"],
-            "NVDA": ["nvidia"],
-            "META": ["meta", "facebook"],
-            "TSLA": ["tesla"],
-        }
-        search_terms = [ticker_lower] + ticker_to_names.get(ticker, [])
+        ticker = ticker.upper()
 
         rows = []
         seen = 0
         for row in ds:
             seen += 1
-            # Check all text fields for the ticker/company name
-            text_fields = " ".join(
-                str(v).lower() for v in row.values() if isinstance(v, str)
-            )
-            if any(term in text_fields for term in search_terms):
+
+            row_ticker = str(row.get("ticker", "")).upper().strip()
+
+            # Strict filter: only keep rows whose ticker exactly matches
+            if row_ticker == ticker:
                 rows.append(row)
-                if len(rows) >= 50:
-                    break
+
+            if len(rows) >= 50:
+                break
             if seen >= 50000:
                 break
             if seen % 10000 == 0:
                 print(f"  Scanned {seen} rows, found {len(rows)} matches...")
 
         if rows:
-            with open(out_file, "w") as f:
+            with open(out_file, "w", encoding="utf-8") as f:
                 for row in rows:
-                    # Convert all values to strings for JSON serialization
-                    clean = {k: str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v
-                             for k, v in row.items()}
+                    clean = {
+                        k: str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v
+                        for k, v in row.items()
+                    }
                     f.write(json.dumps(clean) + "\n")
             print(f"  Saved {len(rows)} transcript entries -> {out_file.name}")
             return out_file
@@ -144,7 +135,7 @@ def download_earnings(ticker: str) -> Path | None:
 
 def download_market_data(ticker: str) -> Path | None:
     """Download OHLCV price data and fundamentals from yfinance."""
-    print(f"\n[3/3] Downloading market data for {ticker}...")
+    print(f"\n[4/4] Downloading market data for {ticker}...")
 
     out_dir = DEMO_DIR / "market"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -187,6 +178,134 @@ def download_market_data(ticker: str) -> Path | None:
     except Exception as e:
         print(f"  Error: {e}")
         return None
+    
+def download_news(ticker: str) -> Path | None:
+    """Download recent news for a ticker using yfinance and normalize fields."""
+    print(f"\n[3/4] Downloading news for {ticker}...")
+
+    out_dir = DEMO_DIR / "news" / ticker
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / "news.jsonl"
+
+    if out_file.exists():
+        print(f"  Already exists: {out_file.name}")
+        return out_file
+
+    try:
+        import yfinance as yf
+
+        def _pick(*values):
+            for v in values:
+                if v not in (None, "", [], {}):
+                    return v
+            return ""
+
+        def _normalize_news_item(item: dict, ticker: str) -> dict:
+            # Some yfinance news payloads are flat, others keep the useful fields
+            # inside nested objects such as content/provider/canonicalUrl/clickThroughUrl.
+            content = item.get("content")
+            if not isinstance(content, dict):
+                content = {}
+
+            provider = content.get("provider")
+            if not isinstance(provider, dict):
+                provider = {}
+
+            canonical = content.get("canonicalUrl")
+            if not isinstance(canonical, dict):
+                canonical = {}
+
+            clickthrough = content.get("clickThroughUrl")
+            if not isinstance(clickthrough, dict):
+                clickthrough = {}
+
+            title = _pick(
+                item.get("title"),
+                content.get("title"),
+            )
+
+            summary = _pick(
+                item.get("summary"),
+                content.get("summary"),
+                content.get("description"),
+            )
+
+            source = _pick(
+                item.get("publisher"),
+                item.get("source"),
+                provider.get("displayName"),
+                provider.get("sourceId"),
+            )
+
+            date = _pick(
+                item.get("providerPublishTime"),
+                item.get("pubDate"),
+                content.get("pubDate"),
+                content.get("displayTime"),
+            )
+
+            url = _pick(
+                item.get("link"),
+                item.get("url"),
+                canonical.get("url"),
+                clickthrough.get("url"),
+            )
+
+            normalized = {
+                "ticker": ticker,
+                "title": str(title),
+                "summary": str(summary),
+                "source": str(source),
+                "date": str(date),
+                "url": str(url),
+            }
+
+            # Keep useful optional metadata when available
+            content_type = _pick(item.get("contentType"), content.get("contentType"))
+            if content_type:
+                normalized["content_type"] = str(content_type)
+
+            item_id = _pick(item.get("id"), content.get("id"))
+            if item_id:
+                normalized["id"] = str(item_id)
+
+            # Optional: keep raw payload for debugging / future schema updates
+            normalized["raw"] = item
+
+            return normalized
+
+        stock = yf.Ticker(ticker)
+        news_items = getattr(stock, "news", []) or []
+
+        news_limit = int(os.getenv("PIPELINE_NEWS_LIMIT", "10"))
+        cleaned = []
+
+        for item in news_items[:news_limit]:
+            if not isinstance(item, dict):
+                continue
+
+            row = _normalize_news_item(item, ticker)
+
+            # Skip useless rows that still have no real text
+            if not row["title"] and not row["summary"]:
+                continue
+
+            cleaned.append(row)
+
+        if not cleaned:
+            print(f"  No news found for {ticker}")
+            return None
+
+        with open(out_file, "w", encoding="utf-8") as f:
+            for row in cleaned:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+        print(f"  Saved {len(cleaned)} news entries -> {out_file.name}")
+        return out_file
+
+    except Exception as e:
+        print(f"  Error: {e}")
+        return None
 
 
 def main():
@@ -203,6 +322,7 @@ def main():
 
     sec_files = download_sec_filing(ticker)
     earnings_file = download_earnings(ticker)
+    news_file = download_news(ticker)
     market_file = download_market_data(ticker)
 
     print("\n" + "=" * 60)
@@ -211,11 +331,13 @@ def main():
         print(f"  SEC:      {f}")
     if earnings_file:
         print(f"  Earnings: {earnings_file}")
+    if news_file:
+        print(f"  News:     {news_file}")
     if market_file:
         print(f"  Market:   {market_file}")
         print(f"  Info:     {market_file.with_name(f'{ticker}_info.json')}")
 
-    print(f"\nNext: python demo/single_agent_demo.py --ticker {ticker}")
+    print(f"\nNext: python scripts/ingest_demo.py --ticker {ticker}")
     print("=" * 60)
 
 

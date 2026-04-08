@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -141,8 +142,12 @@ def main():
         help="Which agent to test (default: all)",
     )
     parser.add_argument("--ticker", default="AAPL", help="Ticker symbol (default: AAPL)")
-    parser.add_argument("--date", default="2025-04-04", help="Analysis date YYYY-MM-DD (default: 2025-04-04)")
-    parser.add_argument("--lookback-days", type=int, default=365, help="Lookback period in days (default: 365)")
+    parser.add_argument(
+        "--date",
+        default=date.today().isoformat(),
+        help="Analysis date YYYY-MM-DD (default: today)",
+    )
+    parser.add_argument("--lookback-days", type=int, default=180, help="Lookback period in days (default: 180)")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging for agents")
     args = parser.parse_args()
 
@@ -157,9 +162,9 @@ def main():
     print("=" * 60)
 
     for agent_name in agents_to_test:
-        print(f"\n{'─' * 60}")
+        print(f"\n{'-' * 60}")
         print(f"Testing: {agent_name}")
-        print("─" * 60)
+        print("-" * 60)
 
         result = run_agent(agent_name, ticker=args.ticker.upper(), date=args.date, lookback_days=args.lookback_days, debug=args.debug)
         display_and_save_result(agent_name, result)

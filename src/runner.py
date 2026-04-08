@@ -74,12 +74,18 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     from src.graph import build_graph
+    from src.preflight import ensure_ticker_data, extract_ticker_from_query
 
     graph = build_graph()
 
     print("=" * 60)
     print(f"Running {len(args.queries)} query(ies)")
     print("=" * 60)
+
+    for query in args.queries:
+        ticker = extract_ticker_from_query(query)
+        if ticker:
+            ensure_ticker_data(ticker)
 
     if len(args.queries) == 1:
         result = graph.invoke({"query": args.queries[0], "errors": []})

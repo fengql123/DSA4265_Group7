@@ -1,134 +1,163 @@
-"""Sentiment Analysis Agent — STUB.
-
-TODO: Teammates implement this agent. Replace mock implementations with real
-logic using RAG retrieval, FinBERT sentiment analysis, and chart generation.
-
-The stub returns mock data with a dummy chart image to test multimodality.
-It implements all abstract methods but skips the LLM — parse_output() returns
-a hardcoded SentimentReport directly.
-"""
-
 from __future__ import annotations
 
-import random
-from pathlib import Path
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.agents.base import BaseAgent
+from src.artifacts import Artifact
+from src.config import get_llm, load_prompt
 from src.schemas import SentimentReport
-from src.artifacts import Artifact, ArtifactType
+from src.tools.base_tool import ToolResult
+from src.tools.registry import get_tools
 
+import os
+import re
 
 class SentimentAgent(BaseAgent):
     def __init__(self):
         super().__init__(
             agent_name="sentiment",
-            tool_names=[],  # TODO: add real tools
+            tool_names=["rag_retrieve", "analyze_sentiment", "plot_sentiment_timeline"],
             output_field="sentiment_report",
             output_model=SentimentReport,
         )
-        self._mock_artifacts: list[Artifact] = []
-
-    # ------------------------------------------------------------------
-    # STUB implementations — teammates replace these with real logic
-    # ------------------------------------------------------------------
 
     def get_system_prompt(self, state: dict) -> str:
-        return "You are a sentiment analyst."
+        template = load_prompt(self.agent_name)
+        return template.format(
+            ticker=state.get("ticker", "UNKNOWN"),
+            date=state.get("analysis_date", "UNKNOWN"),
+        )
 
     def build_messages(self, state: dict) -> list:
+        ticker = state.get("ticker", "UNKNOWN")
+        analysis_date = state.get("analysis_date", "UNKNOWN")
+        start_date = state.get("start_date", "UNKNOWN")
+        lookback_days = int(
+            os.getenv("PIPELINE_LOOKBACK_DAYS",
+            state.get("lookback_days", 30))
+        )
+
         return [
             SystemMessage(content=self.get_system_prompt(state)),
-            HumanMessage(content=f"Analyze sentiment for {state.get('ticker', 'UNKNOWN')}."),
+            HumanMessage(
+                content=(
+                    f"Analyze sentiment for {ticker} as of {analysis_date}. "
+                    f"Focus on the recent period starting around {start_date} "
+                    f"and covering roughly the last {lookback_days} days. "
+
+                    f"Use rag_retrieve twice: "
+                    f"(1) retrieve recent company-specific NEWS from the 'news' collection, "
+                    f"and (2) retrieve recent company-specific EARNINGS TRANSCRIPT content "
+                    f"from the 'earnings' collection. "
+
+                    f"When calling rag_retrieve, make sure the retrieval is specific to ticker {ticker}. "
+                    f"Pass start_date={start_date} and end_date={analysis_date} so dated chunks can be filtered to the requested window. "
+                    f"Do not use sec_filings for this agent unless absolutely necessary. "
+
+                    f"After retrieving both source types, combine the most relevant text chunks "
+                    f"from news and earnings, then run analyze_sentiment on the combined text list. "
+
+                    f"Your final report should clearly reflect both sources when available. "
+                    f"If one source is missing, say so explicitly. "
+
+                    f"If you have enough dated evidence points, use plot_sentiment_timeline "
+                    f"to create a chart. "
+
+                    f"Return a structured sentiment report with overall_sentiment, "
+                    f"sentiment_score, key_themes, evidence, chart_paths, and summary."
+                )
+            ),
         ]
 
     def get_tools(self) -> list:
-        return []  # TODO: add rag_retrieve, analyze_sentiment, plot_sentiment_timeline
+        tools = get_tools(self.tool_names)
+        if self.mcp_servers:
+            tools.extend(self._load_mcp_tools())
+        return tools
 
     def handle_tool_result(self, result: Any) -> tuple[str, list[Artifact]]:
+        if isinstance(result, ToolResult):
+            return (result.content, result.artifacts)
         if isinstance(result, tuple) and len(result) == 2:
             return (str(result[0]), list(result[1]) if result[1] else [])
         return (str(result), [])
 
     def build_artifact_message(self, artifacts: list[Artifact]) -> HumanMessage | None:
-        return None  # TODO: implement multimodal injection
+        return None
+    
+    @staticmethod
+    def _is_stale_evidence(text: str) -> bool:
+        text = (text or "").lower()
+        stale_patterns = [
+            r"out of \d+-day window",
+            r"out-of-window",
+            r"out of window",
+            r"outside the requested window",
+            r"outside \d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}",
+        ]
+        return any(re.search(pattern, text) for pattern in stale_patterns)
 
-    def parse_output(self, messages: list) -> SentimentReport:
-        """MOCK: Return random sentiment data instead of calling LLM."""
-        # Extract ticker from the messages
-        ticker = "UNKNOWN"
-        for msg in messages:
-            content = msg.content if hasattr(msg, "content") else str(msg)
-            if isinstance(content, str) and "ticker" not in content:
-                # Try to find ticker in the message
-                pass
-
-        score = round(random.uniform(-0.8, 0.8), 2)
-        sentiment = "bullish" if score > 0.2 else "bearish" if score < -0.2 else "neutral"
-
-        # Generate dummy chart for multimodal testing
-        chart_path = self._generate_mock_chart("MOCK", score)
-        if chart_path:
-            self._mock_artifacts.append(
-                Artifact(
-                    artifact_type=ArtifactType.IMAGE,
-                    path=str(chart_path),
-                    mime_type="image/png",
-                    description="Sentiment timeline (mock)",
-                )
-            )
-
-        return SentimentReport(
-            ticker="MOCK",
-            overall_sentiment=sentiment,
-            sentiment_score=score,
-            key_themes=["revenue growth", "market competition", "product innovation"],
-            evidence=[
-                f"Mock: Sentiment is {sentiment} with score {score}.",
-                "Mock: Recent earnings exceeded analyst expectations.",
-            ],
-            chart_paths=[str(chart_path)] if chart_path else [],
-            summary=f"Mock sentiment analysis: {sentiment} (score: {score}).",
+    @staticmethod
+    def _looks_like_earnings_evidence(text: str) -> bool:
+        text = (text or "").lower()
+        return (
+            "earnings" in text
+            or "transcript" in text
+            or "cfo:" in text
+            or "ceo:" in text
         )
 
+    def _clean_sentiment_report(self, report: SentimentReport) -> SentimentReport:
+        kept_evidence = []
+        removed_stale_earnings = 0
+
+        for ev in (report.evidence or []):
+            if self._is_stale_evidence(ev):
+                if self._looks_like_earnings_evidence(ev):
+                    removed_stale_earnings += 1
+                continue
+            kept_evidence.append(ev)
+
+        report.evidence = kept_evidence
+
+        if removed_stale_earnings > 0:
+            note = "Recent earnings transcript evidence was unavailable within the requested window."
+            summary = report.summary or ""
+            if note not in summary:
+                report.summary = f"{summary} {note}".strip()
+
+        return report
+
+    def parse_output(self, messages: list) -> SentimentReport:
+        llm = get_llm().with_structured_output(self.output_model)
+        messages = messages + [
+            HumanMessage(
+                content=(
+                    "Now produce your final structured sentiment report. "
+                    "Set overall_sentiment to exactly one of: bullish, neutral, bearish. "
+                    "Set sentiment_score between -1 and 1. "
+                    "Use concise, finance-focused key themes. "
+                    "Include supporting evidence snippets. "
+                    "Prefer evidence from both news and earnings transcripts when both are available. "
+                    "If only one source type was successfully retrieved, make that clear in the summary. "
+                    "Never include stale or out-of-window evidence in the evidence list. "
+                    "If earnings evidence is stale or unavailable, omit it and say so briefly in the summary. "
+                    "Do not invent evidence."
+                )
+            )
+        ]
+        return llm.invoke(messages)
+
     def build_result(self, output: object, artifacts: list[Artifact]) -> dict:
-        # Include any mock artifacts generated in parse_output
-        all_artifacts = artifacts + self._mock_artifacts
-        self._mock_artifacts = []  # Reset for next run
+        if isinstance(output, SentimentReport):
+            output = self._clean_sentiment_report(output)
+
         result = {self.output_field: output}
-        if all_artifacts:
-            result["artifacts"] = all_artifacts
+        if artifacts:
+            result["artifacts"] = artifacts
         return result
 
     def is_vision_capable(self) -> bool:
         return False
-
-    @staticmethod
-    def _generate_mock_chart(ticker: str, score: float) -> Path | None:
-        """Generate a small dummy sentiment chart for multimodal testing."""
-        try:
-            import matplotlib
-            matplotlib.use("Agg")
-            import matplotlib.pyplot as plt
-
-            fig, ax = plt.subplots(figsize=(6, 3))
-            dates = ["Q1", "Q2", "Q3", "Q4"]
-            scores = [round(score + random.uniform(-0.3, 0.3), 2) for _ in dates]
-            colors = ["#2ecc71" if s > 0 else "#e74c3c" for s in scores]
-            ax.bar(dates, scores, color=colors)
-            ax.set_title(f"{ticker} Sentiment (Mock)")
-            ax.set_ylabel("Score")
-            ax.axhline(0, color="gray", linestyle="--", linewidth=0.5)
-            ax.set_ylim(-1, 1)
-            fig.tight_layout()
-
-            out_dir = Path("outputs")
-            out_dir.mkdir(exist_ok=True)
-            path = out_dir / f"{ticker}_mock_sentiment.png"
-            fig.savefig(path, dpi=100)
-            plt.close(fig)
-            return path
-        except Exception:
-            return None

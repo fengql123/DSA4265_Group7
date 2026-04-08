@@ -29,12 +29,37 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
-def run_single_query(query: str, debug: bool = False) -> dict:
+def maybe_prepare_query_data(query: str, prepare_data: bool) -> None:
+    """Prepare ticker data for a query if requested."""
+    if not prepare_data:
+        return
+
+    from src.preflight import ensure_ticker_data, extract_ticker_from_query
+
+    ticker = extract_ticker_from_query(query)
+    if not ticker:
+        print(f"  Could not infer ticker for query: {query}")
+        return
+
+    print(f"  Checking indexed RAG data for {ticker}...")
+    ensure_ticker_data(ticker)
+
+
+def run_single_query(query: str, debug: bool = False, prepare_data: bool = False) -> dict:
     """Run a single query through the pipeline."""
     from src.graph import build_graph
 
+    maybe_prepare_query_data(query, prepare_data)
     graph = build_graph(debug=debug)
     return graph.invoke({"query": query, "errors": []})
+
+
+def slugify_query(query: str) -> str:
+    """Create a simple filename-safe slug from a query."""
+    cleaned = "".join(ch.lower() if ch.isalnum() else "_" for ch in query.strip())
+    while "__" in cleaned:
+        cleaned = cleaned.replace("__", "_")
+    return cleaned.strip("_")[:60] or "query"
 
 
 def main():
@@ -42,6 +67,16 @@ def main():
 
     parser = argparse.ArgumentParser(description="Full pipeline demo.")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    parser.add_argument(
+        "--prepare-data",
+        action="store_true",
+        help="Auto-download and ingest ticker data if indexed RAG coverage is missing",
+    )
+    parser.add_argument(
+        "--batch",
+        action="store_true",
+        help="Run the parallel multi-query batch demo",
+    )
     args = parser.parse_args()
 
     print("=" * 60)
@@ -51,14 +86,17 @@ def main():
     # =========================================================================
     # STEP 1: Single query
     # =========================================================================
-    query = "Should I invest in Apple stock?"
+    query = "Should I invest in NVIDIA stock?"
     print(f"\nStep 1: Running query: '{query}'")
     print("  MainAgent will:")
-    print("    - Extract ticker (AAPL) and date range from the query")
+    print("    - Extract ticker and date range from the query")
     print("    - Call sentiment, fundamental, risk sub-agent tools")
     print("    - Synthesize into InvestmentMemo\n")
 
-    result = run_single_query(query, debug=args.debug)
+    if args.prepare_data:
+        print("  Preflight enabled: missing ticker data will be downloaded and ingested first.\n")
+
+    result = run_single_query(query, debug=args.debug, prepare_data=args.prepare_data)
 
     # =========================================================================
     # STEP 2: Display results
@@ -112,31 +150,49 @@ def main():
     else:
         print("  No artifacts collected (sentiment stub may not have generated a chart)")
 
-    # =========================================================================
-    # STEP 4: Parallel multi-query
-    # =========================================================================
     print("\n\nStep 4: Parallel multi-query")
     print("-" * 40)
 
-    queries = [
-        "Should I invest in Apple?",
-        "Analyze Tesla stock",
-    ]
-    print(f"  Running {len(queries)} queries in parallel via graph.batch()...")
+    if args.batch:
+        queries = [
+            "Should I invest in NVIDIA?",
+            "Analyze Microsoft stock",
+        ]
+        print(f"  Running {len(queries)} queries in parallel via graph.batch()...")
 
-    from src.graph import build_graph
+        if args.prepare_data:
+            for q in queries:
+                maybe_prepare_query_data(q, prepare_data=True)
 
-    graph = build_graph(debug=args.debug)
-    states = [{"query": q, "errors": []} for q in queries]
-    results = graph.batch(states)
+        from src.graph import build_graph
 
-    for q, r in zip(queries, results):
-        m = r.get("investment_memo")
-        if m:
-            print(f"  '{q}' -> {m.ticker}: {m.recommendation.upper()} ({m.confidence:.0%})")
-        else:
-            errs = r.get("errors", [])
-            print(f"  '{q}' -> FAILED: {errs}")
+        graph = build_graph(debug=args.debug)
+        states = [{"query": q, "errors": []} for q in queries]
+        results = graph.batch(states)
+
+        out_dir = Path("outputs")
+        out_dir.mkdir(exist_ok=True)
+
+        for q, r in zip(queries, results):
+            m = r.get("investment_memo")
+            if m:
+                print(f"  '{q}' -> {m.ticker}: {m.recommendation.upper()} ({m.confidence:.0%})")
+
+                slug = slugify_query(q)
+                batch_json_path = out_dir / f"batch_{slug}.json"
+                batch_md_path = out_dir / f"batch_{slug}.md"
+
+                with open(batch_json_path, "w") as f:
+                    json.dump(m.model_dump(), f, indent=2, default=str)
+                batch_md_path.write_text(m.report_markdown)
+
+                print(f"    Saved JSON: {batch_json_path}")
+                print(f"    Saved Markdown: {batch_md_path}")
+            else:
+                errs = r.get("errors", [])
+                print(f"  '{q}' -> FAILED: {errs}")
+    else:
+        print("  Skipped. Re-run with --batch to include the parallel multi-query test.")
 
     print("\n" + "=" * 60)
     print("DEMO COMPLETE")
