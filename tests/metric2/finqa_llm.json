@@ -1,0 +1,94 @@
+{
+  "benchmark": "finqa",
+  "sample_size": 20,
+  "collection_names": [
+    "sec_filings",
+    "earnings",
+    "news"
+  ],
+  "use_reference_contexts": true,
+  "ragas": {
+    "faithfulness": 0.305,
+    "answer_relevancy": 0.3586,
+    "context_precision": 0.5125
+  },
+  "finqa_execution_accuracy": 0.65,
+  "target_check": false,
+  "examples": [
+    {
+      "id": 0,
+      "question": "what is the net change in net revenue during 2015 for entergy corporation?",
+      "answer": "94",
+      "ground_truth": "94",
+      "contexts": [
+        "the 2014 net revenue of amount ( in millions ) is $ 5735 ;",
+        "the 2015 net revenue of amount ( in millions ) is $ 5829 ;",
+        "Table:\namount ( in millions )\n2014 net revenue | $ 5735\nretail electric price | 187\nvolume/weather | 95\nwaterford 3 replacement steam generator provision | -32 ( 32 )\nmiso deferral | -35 ( 35 )\nlouisiana business combination customer credits | -107 ( 107 )\nother | -14 ( 14 )\n2015 net revenue | $ 5829",
+        "entergy corporation and subsidiaries management 2019s financial discussion and analysis a result of the entergy louisiana and entergy gulf states louisiana business combination , results of operations for 2015 also include two items that occurred in october 2015 : 1 ) a deferred tax asset and resulting net increase in tax basis of approximately $ 334 million and 2 ) a regulatory liability of $ 107 million ( $ 66 million net-of-tax ) as a result of customer credits to be realized by electric customers of entergy louisiana , consistent with the terms of the stipulated settlement in the business combination proceeding .",
+        "see note 2 to the financial statements for further discussion of the business combination and customer credits ."
+      ],
+      "ticker": null,
+      "company": null
+    },
+    {
+      "id": 1,
+      "question": "what percentage of total facilities as measured in square feet are leased?",
+      "answer": "14.46",
+      "ground_truth": "14%",
+      "contexts": [
+        "( square feet in millions ) the leased facilities2 of unitedstates is 2.1 ; the leased facilities2 of othercountries is 6.0 ; the leased facilities2 of total is 8.1 ;",
+        "( square feet in millions ) the total facilities of unitedstates is 32.8 ; the total facilities of othercountries is 23.2 ; the total facilities of total is 56.0 ;",
+        "Table:\n( square feet in millions ) | unitedstates | othercountries | total\nowned facilities1 | 30.7 | 17.2 | 47.9\nleased facilities2 | 2.1 | 6.0 | 8.1\ntotal facilities | 32.8 | 23.2 | 56.0",
+        "item 1b .",
+        "unresolved staff comments not applicable ."
+      ],
+      "ticker": null,
+      "company": null
+    },
+    {
+      "id": 2,
+      "question": "what is the percentage change in cash flow hedges in 2011 compare to the 2010?",
+      "answer": "9.86",
+      "ground_truth": "9.9%",
+      "contexts": [
+        "the total notional amounts of derivative instruments designated as hedging instruments as of october 29 , 2011 and october 30 , 2010 were $ 375 million of interest rate swap agreements accounted for as fair value hedges and $ 153.7 million and $ 139.9 million , respectively , of cash flow hedges denominated in euros , british pounds and analog devices , inc .",
+        "Table:\nstatement of income classification | statement of income loss on swaps | statement of income gain on note | statement of income net income effect | statement of income gain on swaps | loss on note | net income effect\nother income | $ -4614 ( 4614 ) | $ 4614 | $ 2014 | $ 20692 | $ -20692 ( 20692 ) | $ 2014",
+        "undesignated hedges was $ 41.2 million and $ 42.1 million , respectively .",
+        "the fair value of these hedging instruments in the company 2019s consolidated balance sheets as of october 29 , 2011 and october 30 , 2010 was immaterial .",
+        "interest rate exposure management 2014 on june 30 , 2009 , the company entered into interest rate swap transactions related to its outstanding 5.0% ( 5.0 % ) senior unsecured notes where the company swapped the notional amount of its $ 375 million of fixed rate debt at 5.0% ( 5.0 % ) into floating interest rate debt through july 1 , 2014 ."
+      ],
+      "ticker": null,
+      "company": null
+    },
+    {
+      "id": 3,
+      "question": "what portion of total purchase price is related to stock awards?",
+      "answer": "2.90",
+      "ground_truth": "2.9%",
+      "contexts": [
+        "value of metavante common stock the value of metavante stock awards of $ 4066.4 is 121.4 ;",
+        "value of metavante common stock the total purchase price of $ 4066.4 is $ 4187.8 ;",
+        "Table:\nvalue of metavante common stock | $ 4066.4\nvalue of metavante stock awards | 121.4\ntotal purchase price | $ 4187.8",
+        "chairman and a director of the board of fis as well as the chairman of the board of lps .",
+        "effective march 1 , 2010 , mr ."
+      ],
+      "ticker": null,
+      "company": null
+    },
+    {
+      "id": 4,
+      "question": "what was the difference in percentage cumulative total shareholder return on masco common stock versus the s&p 500 index for the five year period ended 2017?",
+      "answer": "54.44",
+      "ground_truth": "111.97%",
+      "contexts": [
+        "the masco of 2013 is $ 138.48 ; the masco of 2014 is $ 155.26 ; the masco of 2015 is $ 200.79 ; the masco of 2016 is $ 227.08 ; the masco of 2017 is $ 318.46 ;",
+        "the s&p 500 index of 2013 is $ 132.04 ; the s&p 500 index of 2014 is $ 149.89 ; the s&p 500 index of 2015 is $ 151.94 ; the s&p 500 index of 2016 is $ 169.82 ; the s&p 500 index of 2017 is $ 206.49 ;",
+        "Table:\n2013 | 2014 | 2015 | 2016 | 2017\nmasco | $ 138.48 | $ 155.26 | $ 200.79 | $ 227.08 | $ 318.46\ns&p 500 index | $ 132.04 | $ 149.89 | $ 151.94 | $ 169.82 | $ 206.49\ns&p industrials index | $ 140.18 | $ 153.73 | $ 149.83 | $ 177.65 | $ 214.55\ns&p consumer durables & apparel index | $ 135.84 | $ 148.31 | $ 147.23 | $ 138.82 | $ 164.39",
+        "performance graph the table below compares the cumulative total shareholder return on our common stock with the cumulative total return of ( i ) the standard & poor's 500 composite stock index ( \"s&p 500 index\" ) , ( ii ) the standard & poor's industrials index ( \"s&p industrials index\" ) and ( iii ) the standard & poor's consumer durables & apparel index ( \"s&p consumer durables & apparel index\" ) , from december 31 , 2012 through december 31 , 2017 , when the closing price of our common stock was $ 43.94 .",
+        "the graph assumes investments of $ 100 on december 31 , 2012 in our common stock and in each of the three indices and the reinvestment of dividends ."
+      ],
+      "ticker": null,
+      "company": null
+    }
+  ]
+}

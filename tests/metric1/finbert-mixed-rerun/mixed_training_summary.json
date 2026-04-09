@@ -1,0 +1,23 @@
+{
+  "model": "ProsusAI/finbert",
+  "output_dir": "tests/metric1/finbert-mixed-rerun",
+  "phrasebank_config": "sentences_allagree",
+  "fiqa_test": {
+    "eval_loss": 0.5191464424133301,
+    "eval_accuracy": 0.8333333333333334,
+    "eval_weighted_f1": 0.8364848143538729,
+    "eval_runtime": 30.4378,
+    "eval_samples_per_second": 7.688,
+    "eval_steps_per_second": 0.986,
+    "epoch": 2.0
+  },
+  "phrasebank_test": {
+    "eval_loss": 0.1280895173549652,
+    "eval_accuracy": 0.9536423841059603,
+    "eval_weighted_f1": 0.953359614943318,
+    "eval_runtime": 64.0267,
+    "eval_samples_per_second": 7.075,
+    "eval_steps_per_second": 0.89,
+    "epoch": 2.0
+  }
+}
