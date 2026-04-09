@@ -36,6 +36,14 @@ class RagRetrieveInput(BaseModel):
         default=None,
         description="Optional inclusive end date filter in YYYY-MM-DD format.",
     )
+    preferred_doc_type: str | None = Field(
+        default=None,
+        description="Optional preferred document type for reranking (e.g. 'sec_filing', 'earnings_transcript', 'news').",
+    )
+    preferred_year: int | None = Field(
+        default=None,
+        description="Optional preferred reporting year for reranking (e.g. 2018, 2022).",
+    )
 
 
 class RagRetrieveTool(BaseTool):
@@ -64,6 +72,8 @@ class RagRetrieveTool(BaseTool):
         top_k: int = 10,
         start_date: str | None = None,
         end_date: str | None = None,
+        preferred_doc_type: str | None = None,
+        preferred_year: int | None = None,
     ) -> str:
         from src.rag.retriever import retrieve
 
@@ -72,6 +82,8 @@ class RagRetrieveTool(BaseTool):
             collection_names=collection_names,
             metadata_filter={"ticker": ticker},
             top_k=max(top_k * 3, top_k),
+            preferred_doc_type=preferred_doc_type,
+            preferred_year=preferred_year,
         )
 
         start_bound = self._parse_iso_date(start_date)

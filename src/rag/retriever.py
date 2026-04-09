@@ -75,6 +75,8 @@ class Retriever:
         collection_names: list[str],
         metadata_filter: dict | None = None,
         top_k: int | None = None,
+        preferred_doc_type: str | None = None,
+        preferred_year: int | None = None,
     ) -> list[RetrievedChunk]:
         """Retrieve relevant chunks from one or more ChromaDB collections.
 
@@ -93,7 +95,7 @@ class Retriever:
         query_embedding = self.embedding_model.encode([query]).tolist()[0]
 
         all_chunks: list[RetrievedChunk] = []
-        per_collection_k = max(1, top_k // len(collection_names))
+        per_collection_k = max(3, top_k)
 
         for col_name in collection_names:
             try:
@@ -124,7 +126,15 @@ class Retriever:
                 distances = results["distances"][0] if results["distances"] else [0.0] * len(documents)
 
                 for doc, meta, dist in zip(documents, metadatas, distances):
-                    all_chunks.append(RetrievedChunk(text=doc, metadata=meta, score=dist))
+                    adjusted_score = self._adjust_score(
+                        distance=dist,
+                        metadata=meta or {},
+                        preferred_doc_type=preferred_doc_type,
+                        preferred_year=preferred_year,
+                    )
+                    all_chunks.append(
+                        RetrievedChunk(text=doc, metadata=meta, score=adjusted_score)
+                    )
 
         # Sort by score (lower distance = more relevant)
         all_chunks.sort(key=lambda c: c.score)
@@ -141,6 +151,43 @@ class Retriever:
         if len(conditions) == 1:
             return conditions[0]
         return {"$and": conditions}
+
+    @staticmethod
+    def _adjust_score(
+        distance: float,
+        metadata: dict,
+        preferred_doc_type: str | None,
+        preferred_year: int | None,
+    ) -> float:
+        """Apply simple metadata-aware reranking on top of vector distance."""
+        adjusted = float(distance)
+
+        doc_type = str(metadata.get("doc_type", "")).lower()
+        if preferred_doc_type:
+            target_doc_type = preferred_doc_type.lower()
+            if doc_type == target_doc_type:
+                adjusted -= 0.15
+            elif doc_type:
+                adjusted += 0.05
+
+        if preferred_year is not None:
+            year_candidates = [
+                metadata.get("doc_period"),
+                metadata.get("year"),
+                str(metadata.get("date", ""))[:4],
+            ]
+            for candidate in year_candidates:
+                try:
+                    candidate_year = int(candidate)
+                except (TypeError, ValueError):
+                    continue
+                if candidate_year == preferred_year:
+                    adjusted -= 0.1
+                else:
+                    adjusted += min(abs(candidate_year - preferred_year) * 0.02, 0.12)
+                break
+
+        return adjusted
 
 
 # ---------------------------------------------------------------------------
@@ -170,5 +217,14 @@ def retrieve(
     collection_names: list[str],
     metadata_filter: dict | None = None,
     top_k: int | None = None,
+    preferred_doc_type: str | None = None,
+    preferred_year: int | None = None,
 ) -> list[RetrievedChunk]:
-    return get_default_retriever().retrieve(query, collection_names, metadata_filter, top_k)
+    return get_default_retriever().retrieve(
+        query,
+        collection_names,
+        metadata_filter,
+        top_k,
+        preferred_doc_type=preferred_doc_type,
+        preferred_year=preferred_year,
+    )

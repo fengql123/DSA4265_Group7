@@ -55,6 +55,32 @@ def _extract_date_from_filename(path: Path) -> str:
     return match.group(1) if match else ""
 
 
+def _extract_year_from_filename(path: Path) -> int | None:
+    date_str = _extract_date_from_filename(path)
+    if date_str:
+        try:
+            return int(date_str[:4])
+        except ValueError:
+            return None
+
+    match = re.search(r"\b(19|20)\d{2}\b", path.name)
+    if match:
+        try:
+            return int(match.group(0))
+        except ValueError:
+            return None
+    return None
+
+
+def _extract_filing_type_from_filename(path: Path) -> str:
+    upper_name = path.name.upper()
+    if "10-K" in upper_name or "10K" in upper_name:
+        return "10-K"
+    if "10-Q" in upper_name or "10Q" in upper_name:
+        return "10-Q"
+    return "sec_filing"
+
+
 def ingest_sec_filings(ticker: str) -> int:
     """Ingest SEC filing text files into ChromaDB."""
     from src.rag.indexer import index_files
@@ -77,6 +103,8 @@ def ingest_sec_filings(ticker: str) -> int:
             "doc_type": "sec_filing",
             "source_file": path.name,
             "date": _extract_date_from_filename(path),
+            "doc_period": _extract_year_from_filename(path),
+            "filing_type": _extract_filing_type_from_filename(path),
         }
 
     return index_files(
