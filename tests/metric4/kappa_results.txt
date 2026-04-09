@@ -1,0 +1,13 @@
+Average LLM Scores:
+- accuracy: 4.00
+- depth: 3.95
+- risk: 4.00
+- coherence: 4.00
+- overall_average: 3.99
+
+Matched reports: 20
+Quadratic Weighted Cohen's Kappa Results:
+- accuracy: 0.000
+- depth: -0.016
+- risk: 0.000
+- coherence: 0.000

@@ -14,8 +14,8 @@ client = OpenAI(api_key="")
 # If you prefer environment variable, uncomment below and comment the line above:
 # client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-REPORTS_PATH = "outputs/eval4files"
-EVAL_DIR = "outputs"
+REPORTS_PATH = "tests/metric4/reports_generated"
+EVAL_DIR = "tests/metric4"
 LLM_OUTPUT_FILE = os.path.join(EVAL_DIR, "llm_scores.csv")
 HUMAN_FILE = os.path.join(EVAL_DIR, "human_scores.csv")
 KAPPA_RESULTS_FILE = os.path.join(EVAL_DIR, "kappa_results.txt")

@@ -1,0 +1,76 @@
+{
+  "benchmark": "financebench",
+  "sample_size": 5,
+  "collection_names": [
+    "sec_filings",
+    "earnings",
+    "news"
+  ],
+  "use_reference_contexts": true,
+  "ragas": {
+    "faithfulness": 0.7267,
+    "answer_relevancy": 0.8254,
+    "context_precision": 0.4
+  },
+  "finqa_execution_accuracy": null,
+  "target_check": null,
+  "examples": [
+    {
+      "id": 0,
+      "question": "What is the FY2018 capital expenditure amount (in USD millions) for 3M? Give a response to the question by relying on the details shown in the cash flow statement.",
+      "answer": "FY2018 capital expenditure for 3M (from the cash flow statement line **\u201cPurchases of property, plant and equipment (PP&E)\u201d**) was **$(1,577) million USD**.",
+      "ground_truth": "$1577.00",
+      "contexts": [
+        "Table of Contents \n3M Company and Subsidiaries\nConsolidated Statement of Cash Flow s\nYears ended December 31\n \n(Millions)\n \n2018\n \n2017\n \n2016\n \nCash Flows from Operating Activities\n \n \n \n \n \n \n \nNet income including noncontrolling interest\n \n$\n5,363 \n$\n4,869 \n$\n5,058 \nAdjustments to reconcile net income including noncontrolling interest to net cash\nprovided by operating activities\n \n \n \n \n \n \n \nDepreciation and amortization\n \n \n1,488 \n \n1,544 \n \n1,474 \nCompany pension and postretirement contributions\n \n \n(370) \n \n(967) \n \n(383) \nCompany pension and postretirement expense\n \n \n410 \n \n334 \n \n250 \nStock-based compensation expense\n \n \n302 \n \n324 \n \n298 \nGain on sale of businesses\n \n \n(545) \n \n(586) \n \n(111) \nDeferred income taxes\n \n \n(57) \n \n107 \n \n 7 \nChanges in assets and liabilities\n \n \n \n \n \n \n \nAccounts receivable\n \n \n(305) \n \n(245) \n \n(313) \nInventories\n \n \n(509) \n \n(387) \n \n57 \nAccounts payable\n \n \n408 \n \n24 \n \n148 \nAccrued income taxes (current and long-term)\n \n \n134 \n \n967 \n \n101 \nOther net\n \n \n120 \n \n256 \n \n76 \nNet cash provided by (used in) operating activities\n \n \n6,439 \n \n6,240 \n \n6,662 \n \n \n \n \n \n \n \n \nCash Flows from Investing Activities\n \n \n \n \n \n \n \nPurchases of property, plant and equipment (PP&E)\n \n \n(1,577) \n \n(1,373) \n \n(1,420) \nProceeds from sale of PP&E and other assets\n \n \n262 \n \n49 \n \n58 \nAcquisitions, net of cash acquired\n \n \n13 \n \n(2,023) \n \n(16) \nPurchases of marketable securities and investments\n \n \n(1,828) \n \n(2,152) \n \n(1,410) \nProceeds from maturities and sale of marketable securities and investments\n \n \n2,497 \n \n1,354 \n \n1,247 \nProceeds from sale of businesses, net of cash sold\n \n \n846 \n \n1,065 \n \n142 \nOther net\n \n \n 9 \n \n(6) \n \n(4) \nNet cash provided by (used in) investing activities\n \n \n222 \n \n(3,086) \n \n(1,403) \n \n \n \n \n \n \n \n \nCash Flows from Financing Activities\n \n \n \n \n \n \n \nChange in short-term debt net\n \n \n(284) \n \n578 \n \n(797) \nRepayment of debt (maturities greater than 90 days)\n \n \n(1,034) \n \n(962) \n \n(992) \nProceeds from debt (maturities greater than 90 days)\n \n \n2,251 \n \n1,987 \n \n2,832 \nPurchases of treasury stock\n \n \n(4,870) \n \n(2,068) \n \n(3,753) \nProceeds from issuance of treasury stock pursuant to stock option and benefit plans\n \n \n485 \n \n734 \n \n804 \nDividends paid to shareholders\n \n \n(3,193) \n \n(2,803) \n \n(2,678) \nOther net\n \n \n(56) \n \n(121) \n \n(42) \nNet cash provided by (used in) financing activities\n \n \n(6,701) \n \n(2,655) \n \n(4,626) \n \n \n \n \n \n \n \n \nEffect of exchange rate changes on cash and cash equivalents\n \n \n(160) \n \n156 \n \n(33) \n \n \n \n \n \n \n \n \nNet increase (decrease) in cash and cash equivalents\n \n \n(200) \n \n655 \n \n600 \nCash and cash equivalents at beginning of year\n \n \n3,053 \n \n2,398 \n \n1,798 \nCash and cash equivalents at end of period\n \n$\n2,853 \n$\n3,053 \n$\n2,398 \n \nThe accompanying Notes to Consolidated Financial Statements are an integral part of this statement.\n \n60"
+      ],
+      "ticker": null,
+      "company": "3M"
+    },
+    {
+      "id": 1,
+      "question": "Assume that you are a public equities analyst. Answer the following question by primarily using information that is shown in the balance sheet: what is the year end FY2018 net PPNE for 3M? Answer in USD billions.",
+      "answer": "FY2018 year-end **net PP&E (Property, plant and equipment, net)** for **3M** is **$8.738 billion** (USD), based on **\u201cProperty, plant and equipment net\u201d** of **$8,738 million** at December 31, 2018.",
+      "ground_truth": "$8.70",
+      "contexts": [
+        "Table of Contents \n3M Company and Subsidiaries\nConsolidated Balance Shee t\nAt December 31\n \n \n \nDecember 31,\n \nDecember 31,\n \n(Dollars in millions, except per share amount)\n \n2018\n \n2017\n \nAssets\n \n \n \n \n \nCurrent assets\n \n \n \n \n \nCash and cash equivalents\n \n$\n2,853 \n$\n3,053 \nMarketable securities current\n \n \n380 \n \n1,076 \nAccounts receivable net of allowances of $95 and $103\n \n \n5,020 \n \n4,911 \nInventories\n \n \n \n \n \nFinished goods\n \n \n2,120 \n \n1,915 \nWork in process\n \n \n1,292 \n \n1,218 \nRaw materials and supplies\n \n \n954 \n \n901 \nTotal inventories\n \n \n4,366 \n \n4,034 \nPrepaids\n \n \n741 \n \n937 \nOther current assets\n \n \n349 \n \n266 \nTotal current assets\n \n \n13,709 \n \n14,277 \nProperty, plant and equipment\n \n \n24,873 \n \n24,914 \nLess: Accumulated depreciation\n \n \n(16,135) \n \n(16,048) \nProperty, plant and equipment net\n \n \n8,738 \n \n8,866 \nGoodwill\n \n \n10,051 \n \n10,513 \nIntangible assets net\n \n \n2,657 \n \n2,936 \nOther assets\n \n \n1,345 \n \n1,395 \nTotal assets\n \n$\n36,500 \n$\n37,987 \nLiabilities\n \n \n \n \n \nCurrent liabilities\n \n \n \n \n \nShort-term borrowings and current portion of long-term debt\n \n$\n1,211 \n$\n1,853 \nAccounts payable\n \n \n2,266 \n \n1,945 \nAccrued payroll\n \n \n749 \n \n870 \nAccrued income taxes\n \n \n243 \n \n310 \nOther current liabilities\n \n \n2,775 \n \n2,709 \nTotal current liabilities\n \n \n7,244 \n \n7,687 \n \n \n \n \n \n \nLong-term debt\n \n \n13,411 \n \n12,096 \nPension and postretirement benefits\n \n \n2,987 \n \n3,620 \nOther liabilities\n \n \n3,010 \n \n2,962 \nTotal liabilities\n \n$\n26,652 \n$\n26,365 \nCommitments and contingencies (Note 16)\n \n \n \n \n \nEquity\n \n \n \n \n \n3M Company shareholders equity:\n \n \n \n \n \nCommon stock par value, $.01 par value\n \n$\n 9 \n$\n 9 \nShares outstanding - 2018: 576,575,168\n \n \n \n \n \nShares outstanding - 2017: 594,884,237\n \n \n \n \n \nAdditional paid-in capital\n \n \n5,643 \n \n5,352 \nRetained earnings\n \n \n40,636 \n \n39,115 \nTreasury stock\n \n \n(29,626) \n \n(25,887) \nAccumulated other comprehensive income (loss)\n \n \n(6,866) \n \n(7,026) \nTotal 3M Company shareholders equity\n \n \n9,796 \n \n11,563 \nNoncontrolling interest\n \n \n52 \n \n59 \nTotal equity\n \n$\n9,848 \n$\n11,622 \nTotal liabilities and equity\n \n$\n36,500 \n$\n37,987 \n \nThe accompanying Notes to Consolidated Financial Statements are an integral part of this statement.\n58"
+      ],
+      "ticker": null,
+      "company": "3M"
+    },
+    {
+      "id": 2,
+      "question": "Is 3M a capital-intensive business based on FY2022 data?",
+      "answer": "Based on FY2022 data provided, **yes**\u20143M appears **capital-intensive**, indicated by substantial property, plant and equipment net of **$9,178 million** on total assets of **$46,455 million**, and meaningful 2022 capex for **purchases of PP&E of $1,749 million**.",
+      "ground_truth": "No, the company is managing its CAPEX and Fixed Assets pretty efficiently, which is evident from below key metrics:\nCAPEX/Revenue Ratio: 5.1%\nFixed assets/Total Assets: 20%\nReturn on Assets= 12.4%",
+      "contexts": [
+        "3M Company and Subsidiaries\nConsolidated Statement of Income\nYears ended December 31\n(Millions, except per share amounts)\n2022\n2021\n2020\nNet sales\n$\n34,229 $\n35,355 $\n32,184",
+        "3M Company and Subsidiaries\nConsolidated Balance Sheet\nAt December 31\n(Dollars in millions, except per share amount)\n2022\n2021\nAssets\nCurrent assets\nCash and cash equivalents\n$\n3,655 $\n4,564 \nMarketable securities current\n238 \n201 \nAccounts receivable net of allowances of $174 and $189\n4,532 \n4,660 \nInventories\nFinished goods\n2,497 \n2,196 \nWork in process\n1,606 \n1,577 \nRaw materials and supplies\n1,269 \n1,212 \nTotal inventories\n5,372 \n4,985 \nPrepaids\n435 \n654 \nOther current assets\n456 \n339 \nTotal current assets\n14,688 \n15,403 \nProperty, plant and equipment\n25,998 \n27,213 \nLess: Accumulated depreciation\n(16,820)\n(17,784)\nProperty, plant and equipment net\n9,178 \n9,429 \nOperating lease right of use assets\n829 \n858 \nGoodwill\n12,790 \n13,486 \nIntangible assets net\n4,699 \n5,288 \nOther assets\n4,271 \n2,608 \nTotal assets\n$\n46,455 $\n47,072",
+        "3M Company and Subsidiaries\nConsolidated Statement of Cash Flows\nYears ended December 31\n(Millions)\n2022\n2021\n2020\nCash Flows from Operating Activities\nNet income including noncontrolling interest\n$\n5,791 $\n5,929 $\n5,453 \nAdjustments to reconcile net income including noncontrolling interest to net cash provided by operating\nactivities\nDepreciation and amortization\n1,831 \n1,915 \n1,911 \nLong-lived and indefinite-lived asset impairment expense\n618 \n \n6 \nGoodwill impairment expense\n271 \n \n \nCompany pension and postretirement contributions\n(158)\n(180)\n(156)\nCompany pension and postretirement expense\n178 \n206 \n322 \nStock-based compensation expense\n263 \n274 \n262 \nGain on business divestitures\n(2,724)\n \n(389)\nDeferred income taxes\n(663)\n(166)\n(165)\nChanges in assets and liabilities\nAccounts receivable\n(105)\n(122)\n165 \nInventories\n(629)\n(903)\n(91)\nAccounts payable\n111 \n518 \n252 \nAccrued income taxes (current and long-term)\n(47)\n(244)\n132 \nOther net\n854 \n227 \n411 \nNet cash provided by (used in) operating activities\n5,591 \n7,454 \n8,113 \nCash Flows from Investing Activities\nPurchases of property, plant and equipment (PP&E)\n(1,749)\n(1,603)\n(1,501)"
+      ],
+      "ticker": null,
+      "company": "3M"
+    },
+    {
+      "id": 3,
+      "question": "What drove operating margin change as of FY2022 for 3M? If operating margin is not a useful metric for a company like this, then please state that and explain why.",
+      "answer": "As of FY2022, **3M\u2019s operating margin change was driven primarily by higher SG&A as a percent of sales**, which increased in 2022 versus the prior year due to **elevated special item costs**\u2014notably **~$1.2 billion in 2Q 2022 pre-tax charge related to Combat Arms Earplugs litigation**, plus **impairment costs from exiting PFAS manufacturing**, **costs related to exiting Russia**, **divestiture-related restructuring charges**, and **continued investment in key growth initiatives**. These were **partially offset** by **restructuring benefits** and **general cost management**.",
+      "ground_truth": "Operating Margin for 3M in FY2022 has decreased by 1.7% primarily due to: \n-Decrease in gross Margin\n-mostly one-off charges including Combat Arms Earplugs litigation, impairment related to exiting PFAS manufacturing, costs related to exiting Russia and divestiture-related restructuring\ncharges",
+      "contexts": [
+        "SG&A, measured as a percent of sales, increased in 2022 when compared to the same period last year. SG&A was impacted by increased special item costs for significant\nlitigation primarily related to steps toward resolving Combat Arms Earplugs litigation (discussed in Note 16) resulting in a 2022 second quarter pre-tax charge of approximately\n$1.2 billion, certain impairment costs related to exiting PFAS manufacturing (see Note 15), costs related to exiting Russia (see Note 15), divestiture-related restructuring\ncharges (see Note 5), and continued investment in key growth initiatives. These increases were partially offset by restructuring benefits and ongoing general 3M cost\nmanagement."
+      ],
+      "ticker": null,
+      "company": "3M"
+    },
+    {
+      "id": 4,
+      "question": "If we exclude the impact of M&A, which segment has dragged down 3M's overall growth in 2022?",
+      "answer": "Excluding M&A (i.e., looking at **organic sales + translation**, and ignoring acquisitions/divestitures), the segment that dragged down 3M\u2019s overall 2022 growth is **Consumer**\u2014it has **(0.9)% organic sales** (and translation of **(3.9)%**), making it the negative contributor versus the other segments.",
+      "ground_truth": "The consumer segment shrunk by 0.9% organically.",
+      "contexts": [
+        "Worldwide Sales Change \nBy Business Segment\nOrganic sales\nAcquisitions\nDivestitures\nTranslation\nTotal sales change\nSafety and Industrial\n1.0 %\n \n %\n %\n(4.2) %\n(3.2) %\nTransportation and Electronics\n1.2 \n \n(0.5)\n(4.6)\n(3.9)\nHealth Care\n3.2 \n \n(1.4)\n(3.8)\n(2.0)\nConsumer\n(0.9)\n \n(0.4)\n(2.6)\n(3.9)\nTotal Company\n1.2 \n \n(0.5)\n(3.9)\n(3.2)"
+      ],
+      "ticker": null,
+      "company": "3M"
+    }
+  ]
+}

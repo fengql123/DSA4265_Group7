@@ -1,0 +1,62 @@
+{
+  "benchmark": "financebench",
+  "sample_size": 5,
+  "collection_names": [
+    "financebench_sec_filings"
+  ],
+  "use_reference_contexts": false,
+  "ragas": {
+    "faithfulness": 0.8667,
+    "answer_relevancy": 0.4678,
+    "context_precision": 0.0
+  },
+  "finqa_execution_accuracy": null,
+  "target_check": null,
+  "examples": [
+    {
+      "id": 0,
+      "question": "What is the FY2018 capital expenditure amount (in USD millions) for 3M? Give a response to the question by relying on the details shown in the cash flow statement.",
+      "answer": "I can\u2019t determine 3M\u2019s FY2018 capital expenditure amount from the provided context, because no cash flow statement details (including capex) were included.",
+      "ground_truth": "$1577.00",
+      "contexts": [],
+      "ticker": null,
+      "company": "3M"
+    },
+    {
+      "id": 1,
+      "question": "Assume that you are a public equities analyst. Answer the following question by primarily using information that is shown in the balance sheet: what is the year end FY2018 net PPNE for 3M? Answer in USD billions.",
+      "answer": "The provided context includes **no balance sheet data** for 3M (including FY2018 net PPNE), so I can\u2019t determine the **FY2018 year-end net PPNE** from the supplied information.",
+      "ground_truth": "$8.70",
+      "contexts": [],
+      "ticker": null,
+      "company": "3M"
+    },
+    {
+      "id": 2,
+      "question": "Is 3M a capital-intensive business based on FY2022 data?",
+      "answer": "No. There\u2019s no FY2022 financial data in the provided context, so we can\u2019t determine whether 3M is capital-intensive based on FY2022.",
+      "ground_truth": "No, the company is managing its CAPEX and Fixed Assets pretty efficiently, which is evident from below key metrics:\nCAPEX/Revenue Ratio: 5.1%\nFixed assets/Total Assets: 20%\nReturn on Assets= 12.4%",
+      "contexts": [],
+      "ticker": null,
+      "company": "3M"
+    },
+    {
+      "id": 3,
+      "question": "What drove operating margin change as of FY2022 for 3M? If operating margin is not a useful metric for a company like this, then please state that and explain why.",
+      "answer": "I can\u2019t determine what drove 3M\u2019s operating margin change as of FY2022 because no financial context was provided (the \u201cContext\u201d section is empty).  \n\nAlso, I can\u2019t assess whether operating margin is or isn\u2019t a useful metric for 3M without any supporting information from your materials.",
+      "ground_truth": "Operating Margin for 3M in FY2022 has decreased by 1.7% primarily due to: \n-Decrease in gross Margin\n-mostly one-off charges including Combat Arms Earplugs litigation, impairment related to exiting PFAS manufacturing, costs related to exiting Russia and divestiture-related restructuring\ncharges",
+      "contexts": [],
+      "ticker": null,
+      "company": "3M"
+    },
+    {
+      "id": 4,
+      "question": "If we exclude the impact of M&A, which segment has dragged down 3M's overall growth in 2022?",
+      "answer": "I can\u2019t determine this from the provided context because it contains no information about 3M\u2019s 2022 segment performance or any discussion of M&A impact.",
+      "ground_truth": "The consumer segment shrunk by 0.9% organically.",
+      "contexts": [],
+      "ticker": null,
+      "company": "3M"
+    }
+  ]
+}
