@@ -4,7 +4,7 @@
 
 llm:
   provider: "openrouter"                    # "openrouter" | "openai" | "anthropic" | "local"
-  model: "openai/gpt-5.4-nano"          # Vision + tool calling
+  model: "openai/gpt-5"                     # Training cutoff Sep 30, 2024 — backtest window must start after this date
   temperature: 0.1
 
   # Provider-specific settings (only the active provider is used)

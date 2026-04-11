@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -11,8 +12,6 @@ from src.schemas import SentimentReport
 from src.tools.base_tool import ToolResult
 from src.tools.registry import get_tools
 
-import os
-import re
 
 class SentimentAgent(BaseAgent):
     def __init__(self):
@@ -33,42 +32,9 @@ class SentimentAgent(BaseAgent):
     def build_messages(self, state: dict) -> list:
         ticker = state.get("ticker", "UNKNOWN")
         analysis_date = state.get("analysis_date", "UNKNOWN")
-        start_date = state.get("start_date", "UNKNOWN")
-        lookback_days = int(
-            os.getenv("PIPELINE_LOOKBACK_DAYS",
-            state.get("lookback_days", 30))
-        )
-
         return [
             SystemMessage(content=self.get_system_prompt(state)),
-            HumanMessage(
-                content=(
-                    f"Analyze sentiment for {ticker} as of {analysis_date}. "
-                    f"Focus on the recent period starting around {start_date} "
-                    f"and covering roughly the last {lookback_days} days. "
-
-                    f"Use rag_retrieve twice: "
-                    f"(1) retrieve recent company-specific NEWS from the 'news' collection, "
-                    f"and (2) retrieve recent company-specific EARNINGS TRANSCRIPT content "
-                    f"from the 'earnings' collection. "
-
-                    f"When calling rag_retrieve, make sure the retrieval is specific to ticker {ticker}. "
-                    f"Pass start_date={start_date} and end_date={analysis_date} so dated chunks can be filtered to the requested window. "
-                    f"Do not use sec_filings for this agent unless absolutely necessary. "
-
-                    f"After retrieving both source types, combine the most relevant text chunks "
-                    f"from news and earnings, then run analyze_sentiment on the combined text list. "
-
-                    f"Your final report should clearly reflect both sources when available. "
-                    f"If one source is missing, say so explicitly. "
-
-                    f"If you have enough dated evidence points, use plot_sentiment_timeline "
-                    f"to create a chart. "
-
-                    f"Return a structured sentiment report with overall_sentiment, "
-                    f"sentiment_score, key_themes, evidence, chart_paths, and summary."
-                )
-            ),
+            HumanMessage(content=f"Analyze sentiment for {ticker} as of {analysis_date}."),
         ]
 
     def get_tools(self) -> list:

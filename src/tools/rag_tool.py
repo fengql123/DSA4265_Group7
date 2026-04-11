@@ -49,9 +49,21 @@ class RagRetrieveInput(BaseModel):
 class RagRetrieveTool(BaseTool):
     name = "rag_retrieve"
     description = (
-        "Retrieve relevant document chunks from the vector store. "
-        "Use this to search for financial documents, SEC filings, news articles, "
-        "and earnings transcripts. Construct specific, targeted queries for best results."
+        "**What**: Retrieves relevant document chunks from a ChromaDB vector store of financial documents. "
+        "**When to use**: Any time you need qualitative evidence from SEC filings (10-K / 10-Q), earnings call transcripts, or news articles. "
+        "For quantitative market data use `get_market_data` or `get_price_history` instead. "
+        "**Input**: "
+        "`query` (str — be specific, e.g. 'Apple Services revenue growth Q4 2024' not 'Apple'); "
+        "`collection_names` (list[str] — choose from 'sec_filings', 'earnings', 'news', 'demo_sec_filings', 'demo_earnings'); "
+        "`ticker` (str — filters results to one company); "
+        "`top_k` (int, default 10); "
+        "`start_date`, `end_date` (optional YYYY-MM-DD — excludes chunks outside the window; use these to avoid lookahead when running as-of a past date); "
+        "`preferred_doc_type` (optional 'sec_filing' | 'earnings_transcript' | 'news' — rerank toward this type); "
+        "`preferred_year` (optional int — rerank toward this reporting year). "
+        "**Output**: Human-readable text block of the top-k chunks, each prefixed with `[Source i: file (doc_type) | date=… | title=…]`. "
+        "If no chunks match inside the date window, returns a short explanatory message. "
+        "**Limits**: Quality depends on what has been ingested into ChromaDB for the ticker. "
+        "If a ticker has no data in the requested collection you will get 'No relevant documents found' — do not fabricate evidence."
     )
     input_schema = RagRetrieveInput
 

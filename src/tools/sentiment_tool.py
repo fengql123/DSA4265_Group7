@@ -52,9 +52,13 @@ class SentimentTimelineInput(BaseModel):
 class SentimentAnalysisTool(BaseTool):
     name = "analyze_sentiment"
     description = (
-        "Run FinBERT sentiment analysis on a list of financial text chunks. "
-        "Returns per-text labels, confidence scores, signed sentiment scores, "
-        "and an aggregate summary."
+        "**What**: Runs FinBERT (ProsusAI/finbert) financial sentiment classification on a list of text chunks and produces both a per-chunk breakdown and an aggregate. Also generates distribution / score / timeline charts as side-effect artifacts. "
+        "**When to use**: After retrieving news or earnings-transcript excerpts via `rag_retrieve`, pass the raw text chunks here to get a signed sentiment reading. "
+        "**Input**: `texts` (list[str] — each element is one news snippet, headline, or transcript paragraph). "
+        "**Output**: JSON with `overall_sentiment` ∈ `{bullish, neutral, bearish}` (derived from average score using ±0.15 thresholds), `average_score` ∈ [-1.0, 1.0], "
+        "`counts` dict `{positive, neutral, negative}`, top-3 `strongest_positive` and `strongest_negative` excerpts, full `items` list (per-chunk label + confidence + signed score), and `chart_paths` (PNGs). "
+        "**Limits**: FinBERT is trained on generic financial text; it may mis-label nuanced earnings guidance. "
+        "Max 512 tokens per chunk (longer text is truncated). An empty input returns `neutral / 0.0` without running the model."
     )
     input_schema = SentimentAnalysisInput
 
@@ -342,8 +346,13 @@ class SentimentAnalysisTool(BaseTool):
 class SentimentTimelineTool(BaseTool):
     name = "plot_sentiment_timeline"
     description = (
-        "Generate a sentiment timeline chart from dates and sentiment scores. "
-        "Returns a chart artifact plus a short summary."
+        "**What**: Plots a sentiment score over time for a given ticker. "
+        "**When to use**: Only after you have dated evidence points (dates aligned with sentiment scores). "
+        "Typically called once at the end of sentiment analysis, not repeatedly. "
+        "**Input**: `ticker` (str), `dates` (list[str], YYYY-MM-DD), `scores` (list[float] in [-1, 1]). "
+        "`dates` and `scores` must have the same non-zero length. "
+        "**Output**: A short text message with the chart file path + a PNG image artifact saved under `outputs/{TICKER}_sentiment_timeline.png`. "
+        "**Limits**: Requires at least 2 dated points to render a meaningful line. If the inputs are empty or mismatched, returns an explanatory error instead of a chart."
     )
     input_schema = SentimentTimelineInput
 

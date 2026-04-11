@@ -35,6 +35,8 @@ _TOOL_MODULES = [
     "src.tools.market_data_tool",
     "src.tools.fred_tool",
     "src.tools.sentiment_tool",
+    "src.tools.date_tool",
+    "src.tools.indicators_tool",
 ]
 
 

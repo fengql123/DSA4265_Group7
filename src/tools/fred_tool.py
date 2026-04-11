@@ -45,8 +45,18 @@ class FredDataInput(BaseModel):
 class FredDataTool(BaseTool):
     name = "get_fred_data"
     description = (
-        "Fetch macroeconomic data from FRED (Federal Reserve Economic Data). "
-        "Use this to understand the macroeconomic environment affecting a company."
+        "**What**: Fetches macroeconomic time series from the Federal Reserve Economic Data (FRED) API. "
+        "**When to use**: When macro context is relevant to the analysis — interest rates, inflation, growth, volatility, commodity prices. "
+        "Do NOT use for company-specific data. "
+        "**Input**: "
+        "`series_ids` (list[str]) — pick from: "
+        "`GDP` (Gross Domestic Product), `UNRATE` (Unemployment Rate), `CPIAUCSL` (Consumer Price Index), "
+        "`DFF` (Federal Funds Rate), `T10Y2Y` (10Y-2Y Treasury Spread), `T10YIE` (10-Year Breakeven Inflation), "
+        "`VIXCLS` (VIX Volatility Index), `DCOILWTICO` (WTI Crude Oil Price), `UMCSENT` (Consumer Sentiment), `HOUST` (Housing Starts); "
+        "`num_observations` (int, default 12) — how many most-recent observations per series. "
+        "**Output**: JSON object keyed by series id, each containing `description`, `latest_value`, and `observations` (dict of YYYY-MM-DD → float). "
+        "**Limits**: Requires `FRED_API_KEY` in the environment. Returns per-series `{'error': ...}` if a series cannot be fetched. "
+        "Series are released on different cadences (monthly, quarterly, daily) — latest_value may lag current date by weeks."
     )
     input_schema = FredDataInput
 

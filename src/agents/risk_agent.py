@@ -36,32 +36,9 @@ class RiskAgent(BaseAgent):
     def build_messages(self, state: dict) -> list:
         ticker = state.get("ticker", "UNKNOWN")
         analysis_date = state.get("analysis_date", "UNKNOWN")
-
-        user_task = (
-            f"Assess the key risks for {ticker} as of {analysis_date}. "
-            "Use rag_retrieve before answering. Start by searching SEC filing risk-related sections, "
-            "then check earnings/news for warnings or negative developments if helpful. "
-            "Prioritize concrete company-specific risks over generic market commentary.\n\n"
-            
-            # Giving the LLM a structured retrieval strategy
-            "Recommended retrieval strategy:\n"
-            "1. Search SEC filing risk sections with queries like 'risk factors', 'legal proceedings', "
-            "'regulatory risk', 'liquidity risk', 'supply chain risk', and 'competition'.\n"
-            "2. Use collection_names ['sec_filings', 'news', 'earnings'] when available.\n"
-            "3. If those return no results, try demo collections ['demo_sec_filings', 'demo_earnings'].\n"
-            "4. From the retrieved text, identify the most material risks, estimate an overall risk level "
-            "(low/moderate/high), and note any mitigants such as cash strength, diversification, scale, "
-            "or hedging.\n\n"
-            
-            # Tell LLM how to format output
-            "Your final answer must be consistent with the RiskReport schema: risk_factors should be a list "
-            "of concise bullet-style risk statements, mitigants should be a list of offsets, and the summary "
-            "should explain why the overall risk level was chosen."
-        )
-
         return [
             SystemMessage(content=self.get_system_prompt(state)),
-            HumanMessage(content=user_task),
+            HumanMessage(content=f"Assess the key risks for {ticker} as of {analysis_date}."),
         ]
 
     def get_tools(self) -> list:

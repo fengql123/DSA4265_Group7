@@ -22,23 +22,27 @@ from src.tools.base_tool import ToolResult
 
 
 class MainAgent(BaseAgent):
-    def __init__(self):
+    def __init__(self, disabled_agents: list[str] | None = None):
         super().__init__(
             agent_name="main",
             tool_names=[],  # No registry tools — uses AgentTool-wrapped sub-agents
             output_field="investment_memo",
             output_model=InvestmentMemo,
         )
+        # Optional ablation flag: skip wiring in these sub-agents.
+        # Used by Phase 7 ablation in the backtest pipeline.
+        self.disabled_agents: set[str] = set(disabled_agents or [])
 
     # ------------------------------------------------------------------
     # Override implementations
     # ------------------------------------------------------------------
 
     def get_system_prompt(self, state: dict) -> str:
-        from datetime import date
-
-        template = load_prompt(self.agent_name)
-        return template.format(today=date.today().isoformat())
+        # The rewritten prompt is fully date-agnostic — no .format()
+        # substitution needed. The main agent obtains `today` at
+        # runtime via the `get_today_date` tool, and the user's
+        # explicit date (if any) comes through the HumanMessage query.
+        return load_prompt(self.agent_name)
 
     def build_messages(self, state: dict) -> list:
         return [
@@ -47,19 +51,28 @@ class MainAgent(BaseAgent):
         ]
 
     def get_tools(self) -> list:
-        """Wrap sub-agents as tools via AgentTool."""
+        """Wire get_today_date + sub-agent AgentTools."""
         from src.agents.fundamental_agent import FundamentalAgent
         from src.agents.risk_agent import RiskAgent
         from src.agents.sentiment_agent import SentimentAgent
         from src.agents.technical_agent import TechnicalAgent
         from src.tools.agent_tool import AgentTool
+        from src.tools.registry import get_tool_by_name
 
-        tools = [
-            AgentTool(SentimentAgent()).to_langchain_tool(),
-            AgentTool(FundamentalAgent()).to_langchain_tool(),
-            AgentTool(TechnicalAgent()).to_langchain_tool(),
-            AgentTool(RiskAgent()).to_langchain_tool(),
-        ]
+        # Always prepend get_today_date so the LLM can resolve
+        # "today" without any date baked into the system prompt.
+        tools = [get_tool_by_name("get_today_date")]
+
+        sub_agents = {
+            "sentiment": SentimentAgent,
+            "fundamental": FundamentalAgent,
+            "technical": TechnicalAgent,
+            "risk": RiskAgent,
+        }
+        for name, cls in sub_agents.items():
+            if name in self.disabled_agents:
+                continue
+            tools.append(AgentTool(cls()).to_langchain_tool())
 
         # Also include MCP tools if configured
         if self.mcp_servers:

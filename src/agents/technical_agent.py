@@ -22,7 +22,11 @@ class TechnicalAgent(BaseAgent):
     def __init__(self):
         super().__init__(
             agent_name="technical",
-            tool_names=["get_market_data"],
+            tool_names=[
+                "get_market_data",
+                "get_price_history",
+                "compute_technical_indicators",
+            ],
             output_field="technical_report",
             output_model=TechnicalReport,
         )
@@ -37,19 +41,9 @@ class TechnicalAgent(BaseAgent):
     def build_messages(self, state: dict) -> list:
         ticker = state.get("ticker", "UNKNOWN")
         analysis_date = state.get("analysis_date", "UNKNOWN")
-
         return [
             SystemMessage(content=self.get_system_prompt(state)),
-            HumanMessage(
-                content=(
-                    f"Analyze the technicals of {ticker} as of {analysis_date}. "
-                    f"Use get_market_data to retrieve relevant price-based indicators and market statistics. "
-                    f"Focus on current price, 52-week high and low, 50-day and 200-day moving averages, beta, "
-                    f"and overall trend direction. "
-                    f"Based on the retrieved data, determine whether the stock looks bullish, bearish, or neutral. "
-                    f"Ground your conclusion in the retrieved metrics and avoid making assumptions beyond the data."
-                )
-            ),
+            HumanMessage(content=f"Analyze the technicals of {ticker} as of {analysis_date}."),
         ]
 
     def get_tools(self) -> list:

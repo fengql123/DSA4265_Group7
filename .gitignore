@@ -3,6 +3,9 @@ data/
 outputs/
 !data/.gitkeep
 !outputs/.gitkeep
+*.log
+report/
+*.lock
 
 # Environment
 .env

@@ -39,20 +39,9 @@ class FundamentalAgent(BaseAgent):
     def build_messages(self, state: dict) -> list:
         ticker = state.get("ticker", "UNKNOWN")
         analysis_date = state.get("analysis_date", "UNKNOWN")
-
         return [
             SystemMessage(content=self.get_system_prompt(state)),
-            HumanMessage(
-                content=(
-                    f"Analyze the fundamentals of {ticker} as of {analysis_date}. "
-                    f"First use your tools to gather relevant evidence. "
-                    f"Use get_market_data to obtain financial and valuation metrics. "
-                    f"Use get_fred_data if macroeconomic context is relevant, such as interest rates, inflation, or growth conditions. "
-                    f"Use rag_retrieve to gather supporting qualitative evidence from filings, earnings materials, or news when relevant. "
-                    f"Then evaluate the company across revenue trend, margins, valuation, macro context, and key business strengths or weaknesses. "
-                    f"Ground every conclusion in retrieved evidence rather than generic assumptions."
-                )
-            ),
+            HumanMessage(content=f"Analyze the fundamentals of {ticker} as of {analysis_date}."),
         ]
 
     def get_tools(self) -> list:

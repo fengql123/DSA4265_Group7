@@ -54,6 +54,26 @@ class TechnicalReport(BaseModel):
     technical_signal: Literal["bullish", "neutral", "bearish"] = Field(description="Overall technical signal")
     summary: str = Field(description="Concise summary of the technical analysis")
 
+    # Optional richer indicator fields populated when
+    # compute_technical_indicators is available. Default None keeps the
+    # schema backward-compatible with older runs that only use
+    # get_market_data.
+    rsi14: float | None = Field(default=None, description="14-day Relative Strength Index")
+    macd_signal: str | None = Field(
+        default=None,
+        description="MACD crossover descriptor (e.g. 'bullish', 'bearish', 'flat')",
+    )
+    bollinger_position: str | None = Field(
+        default=None,
+        description="Position of current price relative to Bollinger Bands",
+    )
+    support_levels: list[float] | None = Field(
+        default=None, description="Identified support levels"
+    )
+    resistance_levels: list[float] | None = Field(
+        default=None, description="Identified resistance levels"
+    )
+
 
 class RiskReport(BaseModel):
     """Output of the Risk Assessment Agent."""
